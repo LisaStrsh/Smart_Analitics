@@ -1,0 +1,143 @@
+:root{
+  --bg1: rgb(21, 56, 140);
+  --bg2: #2b5bd6;
+  --card: rgba(14, 33, 84, 0.45);
+  --stroke: rgba(255, 255, 255, 0.35);
+  --text: #ffffff;
+}
+
+*{ box-sizing: border-box; }
+
+body{
+  margin: 0;
+  min-height: 100vh;
+  font-family: Arial, sans-serif;
+  color: var(--text);
+  background: linear-gradient(135deg, var(--bg1), var(--bg2));
+  overflow: hidden;
+
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 160px; /* вот этим двигаешь вниз */
+}
+
+/* фоновые “пятна” как на референсе */
+.bg-shapes::before,
+.bg-shapes::after{
+  content: "";
+  position: fixed;
+  width: 520px;
+  height: 520px;
+  border-radius: 50%;
+  filter: blur(0px);
+  opacity: 0.35;
+  pointer-events: none;
+}
+.bg-shapes::before{
+  left: -200px;
+  top: -200px;
+  background: rgba(255,255,255,0.12);
+}
+.bg-shapes::after{
+  right: -240px;
+  bottom: -240px;
+  background: rgba(0,0,0,0.18);
+}
+
+/* центральная карточка */
+.card{
+  width: min(560px, 92vw);
+  text-align: center;
+  padding: 44px 36px 36px;
+  border-radius: 28px;
+  background: rgba(0,0,0,0.08);
+}
+
+.title{
+  font-size: 52px;
+  margin: 0 0 10px;
+  font-weight: 700;
+}
+
+.subtitle{
+  margin: 0 0 34px;
+  opacity: 0.9;
+}
+
+.form{
+  display: grid;
+  gap: 18px;
+}
+
+/* инпуты */
+.field{
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--stroke);
+  background: rgba(14, 33, 84, 0.25);
+  backdrop-filter: blur(4px);
+}
+
+.field i{
+  width: 22px;
+  text-align: center;
+  opacity: 0.9;
+}
+
+.field input{
+  width: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 16px;
+}
+
+.field input::placeholder{
+  color: rgba(255,255,255,0.75);
+}
+
+/* кнопка */
+.submit{
+  margin-top: 8px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 2px solid rgba(67, 255, 129, 0.65);
+  background: rgba(0,0,0,0.08);
+  color: rgba(67, 255, 129, 0.95);
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* круглые стрелки */
+.nav-btn{
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: #fff;
+  text-decoration: none;
+}
+
+.nav-btn.left{ left: 40px; }
+.nav-btn.right{ right: 40px; }
+
+.nav-btn i{
+  font-size: 28px;
+}
+
+.error{
+  margin-top: 14px;
+  color: #ffd1d1;
+}

@@ -1,0 +1,188 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Block Stat</title>
+
+  <style>
+    :root{
+      --bg: rgb(21, 56, 140);
+      --white: #ffffff;
+      --btn-bg: #ffffff;
+      --btn-text: #111111;
+      --ring: rgba(255,255,255,1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: "Georgia", "Times New Roman", serif; }
+
+    .page{
+      position: relative;
+      min-height: 100vh;
+      background: var(--bg);
+      overflow: hidden;
+      padding: 36px 48px;
+      color: var(--white);
+    }
+
+    /* ЛОГО */
+    .logo{
+      position: absolute;
+      top: -10px;
+      left: -10px;
+      width: 300px;
+      height: 300px;
+      object-fit: contain;
+      user-select: none;
+    }
+
+    /* ДЕКОРАТИВНЫЕ БЕЛЫЕ ДУГИ */
+    .ring{
+      position: absolute;
+      border: 18px solid var(--ring);
+      border-radius: 9999px;
+      pointer-events: none;
+    }
+
+    /* большая дуга снизу-слева */
+    .ring.left-bottom{
+      width: 560px;
+      height: 560px;
+      left: -280px;
+      bottom: -280px;
+    }
+
+    /* дуга сверху-справа */
+    .ring.right-top{
+      width: 380px;
+      height: 380px;
+      right: -220px;
+      top: -220px;
+    }
+
+    /* центральный блок */
+    .content{
+      position: relative;
+      max-width: 980px;
+      margin: 0 auto;
+      padding-top: 64px;
+      text-align: center;
+    }
+
+    h1{
+      font-size: clamp(48px, 6vw, 88px);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin-top: 12px;
+      margin-bottom: 22px;
+    }
+
+    .subtitle{
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: clamp(16px, 2vw, 22px);
+      line-height: 1.35;
+      max-width: 900px;
+      margin: 0 auto 48px;
+      opacity: 0.95;
+    }
+
+    /* кнопки */
+    .actions{
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+      align-items: center;
+      margin-top: 120px;
+    }
+
+    .btn{
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 360px;
+      height: 58px;
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      border-radius: 10px;
+      text-decoration: none;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 20px;
+      font-weight: 500;
+      box-shadow: 0 2px 0 rgba(0,0,0,0.15);
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
+    }
+
+    .btn:hover{
+      transform: translateY(-1px);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.18);
+    }
+
+    .btn:active{
+      transform: translateY(0px);
+      box-shadow: 0 2px 0 rgba(0,0,0,0.15);
+    }
+
+
+    /* Support снизу-слева */
+    .support-left{
+      position: absolute;
+      left: 70px;
+      bottom: 44px;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 26px;
+      text-decoration: none;
+      color: var(--white);
+      opacity: 0.95;
+    }
+
+    /* адаптив: на узких экранах support-right уезжает вниз */
+    @media (max-width: 900px){
+      .support-right{
+        right: 32px;
+        top: auto;
+        bottom: 44px;
+        transform: none;
+        font-size: 22px;
+      }
+      .support-left{
+        left: 32px;
+        font-size: 22px;
+      }
+      .btn{ width: min(360px, 90vw); }
+      .page{ padding: 28px 20px; }
+      .logo{ width: 80px; height: 80px; }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page">
+
+    <img class="logo" src="{% static 'welcome/img/logo_welc.png'%}" alt="Block Smart logo" />
+
+
+    <div class="ring left-bottom"></div>
+    <div class="ring right-top"></div>
+
+
+    <a class="support-left" href="{% url 'support' %}">Support</a>
+
+
+    <section class="content">
+      <h1>Block Stats</h1>
+
+      <p class="subtitle">
+        A Smart System for Accounting and Analyzing Supplies, Goods, and Orders for<br>
+        Small Businesses.
+      </p>
+
+      <div class="actions">
+        <a class="btn" href="{% url 'registration' %}">Registration</a>
+        <a class="btn" href="{% url 'log_in' %}">Log in</a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
