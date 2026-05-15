@@ -1,0 +1,107 @@
+{% extends 'main/layout.html' %}
+{% block title %}{{ dataset.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ dataset.name }}</h1>
+    <p>
+        File: {{ dataset.original_filename }} |
+        {{ dataset.rows_count }} rows × {{ dataset.columns_count }} columns |
+        Status: <span class="status-badge status-{{ dataset.status }}">{{ dataset.get_status_display }}</span>
+    </p>
+    <a href="{% url 'data' %}" class="btn-back">← Back to Data</a>
+</div>
+
+<!-- Секция маппинга колонок -->
+<div class="section">
+    <h2><i class="fa-solid fa-arrows-left-right"></i> Column Mapping</h2>
+    <p class="hint">Map each column from your file to a standard name so analytics can work correctly.</p>
+    
+    <form id="mapping-form" class="mapping-grid">
+        {% for mapping in mappings %}
+        <div class="mapping-row">
+            <span class="col-name">{{ mapping.user_column_name }}</span>
+            <i class="fa-solid fa-arrow-right"></i>
+            <select name="mapping_{{ mapping.id }}" data-mapping-id="{{ mapping.id }}" class="mapping-select">
+                {% for value, label in standard_columns %}
+                <option value="{{ value }}" {% if mapping.standard_name == value %}selected{% endif %}>
+                    {{ label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endfor %}
+        <button type="button" id="save-mapping" class="btn-primary">
+            <i class="fa-solid fa-floppy-disk"></i> Save Mapping
+        </button>
+        <span id="mapping-status" class="mapping-status"></span>
+    </form>
+</div>
+
+<!-- Предпросмотр данных -->
+{% if preview_data %}
+<div class="section">
+    <h2><i class="fa-solid fa-table"></i> Data Preview (first 50 rows)</h2>
+    <div class="table-scroll">
+        <table class="data-table preview-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    {% for col in columns %}
+                    <th>{{ col }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in preview_data %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    {% for cell in row %}
+                    <td>{{ cell }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Сохранение маппинга колонок через AJAX (без перезагрузки страницы)
+document.getElementById('save-mapping').addEventListener('click', function() {
+    const selects = document.querySelectorAll('.mapping-select');
+    const mappings = [];
+    
+    selects.forEach(function(select) {
+        mappings.push({
+            id: select.dataset.mappingId,
+            standard_name: select.value
+        });
+    });
+
+    fetch('{% url "update_mapping" dataset.id %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({ mappings: mappings })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const status = document.getElementById('mapping-status');
+        if (data.status === 'ok') {
+            status.textContent = '✓ Saved!';
+            status.className = 'mapping-status success';
+        } else {
+            status.textContent = '✗ Error';
+            status.className = 'mapping-status error';
+        }
+        setTimeout(() => { status.textContent = ''; }, 3000);
+    });
+});
+</script>
+{% endblock %}
