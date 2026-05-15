@@ -1,0 +1,61 @@
+{% extends 'main/layout.html' %}
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Settings</h1>
+    <p>Manage your profile and company information</p>
+</div>
+
+{% if success %}
+<div class="alert alert-success">
+    <i class="fa-solid fa-check"></i> Settings saved successfully!
+</div>
+{% endif %}
+
+<div class="settings-grid">
+    <div class="settings-card">
+        <h2><i class="fa-solid fa-user"></i> Account Info</h2>
+        <div class="info-row">
+            <span class="info-label">Username:</span>
+            <span class="info-value">{{ request.user.username }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Email:</span>
+            <span class="info-value">{{ request.user.email|default:"Not set" }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Joined:</span>
+            <span class="info-value">{{ request.user.date_joined|date:"d.m.Y" }}</span>
+        </div>
+    </div>
+
+    <div class="settings-card">
+        <h2><i class="fa-solid fa-building"></i> Company & Profile</h2>
+        <form method="post" enctype="multipart/form-data" class="settings-form">
+            {% csrf_token %}
+            
+            <div class="field-group">
+                <label for="company_name">Company Name</label>
+                <input type="text" name="company_name" id="company_name" 
+                       value="{{ profile.company_name }}"
+                       placeholder="Your company name">
+            </div>
+
+            <div class="field-group">
+                <label for="avatar">Profile Image</label>
+                {% if profile.avatar %}
+                <div class="current-avatar">
+                    <img src="{{ profile.avatar.url }}" alt="avatar" class="avatar-preview">
+                </div>
+                {% endif %}
+                <input type="file" name="avatar" id="avatar" accept="image/*">
+            </div>
+
+            <button type="submit" class="btn-primary">
+                <i class="fa-solid fa-floppy-disk"></i> Save Changes
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

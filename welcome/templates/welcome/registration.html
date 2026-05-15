@@ -1,0 +1,89 @@
+{% load static %}
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Registration</title>
+  <link rel="stylesheet" href="{% static 'welcome/css/log_in.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+
+<body>
+  <div class="bg-shapes"></div>
+
+  <main class="card">
+    <h1 class="title">Registration</h1>
+    <p class="subtitle">Create your account</p>
+
+    <form method="post" class="form">
+      {% csrf_token %}
+
+      <div class="field">
+        <i class="fa-regular fa-user"></i>
+        <input type="text"
+           name="username"
+           placeholder="Username"
+           value="{{ request.POST.username }}"
+           autocomplete="off"
+           required>
+      </div>
+      {% if errors.username %}
+      <p class="error">{{ errors.username }}</p>
+      {% endif %}
+
+      <div class="field">
+        <i class="fa-regular fa-envelope"></i>
+        <input type="email"
+           name="email"
+           placeholder="Email"
+           value="{{ request.POST.email }}"
+           autocomplete="off"
+           required>
+      </div>
+      {% if errors.email %}
+      <p class="error">{{ errors.email }}</p>
+      {% endif %}
+
+      <div class="field">
+        <i class="fa-solid fa-building"></i>
+        <input type="text"
+           name="company"
+           placeholder="Company name (optional)"
+           value="{{ request.POST.company }}"
+           autocomplete="off">
+      </div>
+
+      <div class="field">
+        <i class="fa-solid fa-key"></i>
+        <input type="password"
+           name="password1"
+           placeholder="Password"
+           autocomplete="new-password"
+           required>
+      </div>
+      {% if errors.password1 %}
+      <p class="error">{{ errors.password1 }}</p>
+      {% endif %}
+
+      <div class="field">
+        <i class="fa-solid fa-key"></i>
+        <input type="password"
+           name="password2"
+           placeholder="Confirm password"
+           autocomplete="new-password"
+           required>
+      </div>
+      {% if errors.password2 %}
+      <p class="error">{{ errors.password2 }}</p>
+      {% endif %}
+
+      <button class="submit" type="submit">Create Account</button>
+
+      <p class="link">Already have an account? <a href="{% url 'log_in' %}">Log in</a></p>
+    </form>
+  </main>
+
+</body>
+</html>

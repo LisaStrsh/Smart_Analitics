@@ -1,9 +1,67 @@
-{% extends 'main/layout.html'%}
-{% block title%}Main page{% endblock %}
+{% extends 'main/layout.html' %}
+{% block title %}Dashboard{% endblock %}
 
-{% block content%}
-    <h1></h1>
-    <p></p>
-    <p></p>
+{% block content %}
+<div class="page-header">
+    <h1>Dashboard</h1>
+    <p>Welcome, {{ request.user.username }}!</p>
+</div>
+
+<div class="dashboard-cards">
+    <div class="dash-card">
+        <i class="fa-solid fa-database"></i>
+        <h3>{{ datasets|length }}</h3>
+        <p>Datasets uploaded</p>
+        <a href="{% url 'data' %}" class="dash-link">View data →</a>
+    </div>
+    <div class="dash-card">
+        <i class="fa-solid fa-chart-bar"></i>
+        <h3>—</h3>
+        <p>Charts generated</p>
+        <span class="dash-link">Coming soon</span>
+    </div>
+    <div class="dash-card">
+        <i class="fa-solid fa-building"></i>
+        <h3>{{ request.user.profile.company_name|default:"Not set" }}</h3>
+        <p>Company</p>
+        <a href="{% url 'settings' %}" class="dash-link">Edit profile →</a>
+    </div>
+</div>
+
+{% if datasets %}
+<div class="section">
+    <h2>Recent Datasets</h2>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>File</th>
+                <th>Rows</th>
+                <th>Columns</th>
+                <th>Status</th>
+                <th>Uploaded</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ds in datasets %}
+            <tr>
+                <td><a href="{% url 'dataset_detail' ds.id %}">{{ ds.name }}</a></td>
+                <td>{{ ds.original_filename }}</td>
+                <td>{{ ds.rows_count }}</td>
+                <td>{{ ds.columns_count }}</td>
+                <td><span class="status-badge status-{{ ds.status }}">{{ ds.get_status_display }}</span></td>
+                <td>{{ ds.uploaded_at|date:"d.m.Y H:i" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <i class="fa-solid fa-cloud-arrow-up"></i>
+    <h2>No data yet</h2>
+    <p>Upload your first dataset to get started with analytics</p>
+    <a href="{% url 'data' %}" class="btn-primary">Upload Data</a>
+</div>
+{% endif %}
 {% endblock %}
-
