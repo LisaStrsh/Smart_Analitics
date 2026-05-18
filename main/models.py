@@ -109,12 +109,22 @@ class ColumnMapping(models.Model):
         ('goods_category', 'Категория товара'),
         ('quantity', 'Количество'),
         ('price', 'Цена'),
-        ('total', 'Сумма'),
+        ('total', 'Сумма / Выручка'),
+        ('cost', 'Себестоимость'),
         ('date', 'Дата'),
+        ('time', 'Время'),
+        ('datetime', 'Дата и Время'),
         ('supplier', 'Поставщик'),
-        ('customer', 'Клиент/Покупатель'),
+        ('customer', 'Клиент / Покупатель'),
+        ('customer_group', 'Группа клиентов'),
         ('order_id', 'Номер заказа'),
         ('status', 'Статус'),
+        ('payment_method', 'Способ оплаты'),
+        ('store', 'Магазин / Точка'),
+        ('city', 'Город / Регион'),
+        ('manager', 'Менеджер / Сотрудник'),
+        ('discount', 'Скидка'),
+        ('promo', 'Промокод / Акция'),
         ('other', 'Прочее'),
     ]
 
@@ -141,3 +151,23 @@ class ColumnMapping(models.Model):
         verbose_name = 'Маппинг колонки'
         verbose_name_plural = 'Маппинги колонок'
         unique_together = ['dataset', 'user_column_name']  # одна колонка — один маппинг
+
+
+class DashboardWidget(models.Model):
+    """
+    Виджет на дашборде пользователя.
+    Хранит: какой тип визуализации, к какому датасету привязан, позиция на странице.
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='dashboard_widgets')
+    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name='widgets')
+    analytics_id = models.CharField(max_length=100, verbose_name='ID аналитики из каталога')
+    position = models.IntegerField(default=0, verbose_name='Позиция на дашборде')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.analytics_id} — {self.dataset.name} (pos {self.position})"
+
+    class Meta:
+        verbose_name = 'Виджет дашборда'
+        verbose_name_plural = 'Виджеты дашборда'
+        ordering = ['position']
