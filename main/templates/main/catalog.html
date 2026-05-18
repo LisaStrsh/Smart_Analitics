@@ -1,0 +1,398 @@
+{% extends 'main/layout.html' %}
+{% block title %}Каталог аналитики — {{ dataset.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .catalog-header {
+        background: rgba(255, 255, 255, 0.4);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        border-radius: 16px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .catalog-title h1 {
+        font-size: 26px;
+        font-weight: 700;
+        background: linear-gradient(135deg, #15388c 0%, #3066be 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 5px;
+    }
+
+    .catalog-title p {
+        color: #5c677d;
+        margin: 0;
+    }
+
+    .category-tabs {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 30px;
+        overflow-x: auto;
+        padding-bottom: 10px;
+    }
+
+    .category-tab {
+        background: #fff;
+        border: 1px solid #e1e7f0;
+        border-radius: 12px;
+        padding: 10px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #4a5568;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        white-space: nowrap;
+        text-decoration: none;
+    }
+
+    .category-tab:hover {
+        background: #f8fafc;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        color: #4a5568;
+    }
+
+    .category-tab.active {
+        background: #15388c;
+        border-color: #15388c;
+        color: #fff;
+        box-shadow: 0 8px 16px rgba(21, 56, 140, 0.15);
+    }
+
+    .category-section {
+        margin-bottom: 40px;
+        scroll-margin-top: 20px;
+    }
+
+    .category-section-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 20px;
+        font-weight: 700;
+        color: #1a202c;
+        margin-bottom: 20px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .category-section-title span {
+        font-size: 14px;
+        font-weight: 500;
+        color: #718096;
+        margin-left: auto;
+    }
+
+    .widgets-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 24px;
+    }
+
+    .widget-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+    }
+
+    .widget-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+        border-color: #cbd5e0;
+    }
+
+    /* Имитация картинки-превью */
+    .widget-preview-box {
+        height: 140px;
+        background: #f7fafc;
+        border-bottom: 1px solid #edf2f7;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .widget-preview-box i.preview-main-icon {
+        font-size: 40px;
+        color: rgba(21, 56, 140, 0.15);
+        transition: transform 0.3s;
+    }
+
+    .widget-card:hover .widget-preview-box i.preview-main-icon {
+        transform: scale(1.15) rotate(-5deg);
+    }
+
+    /* Миниатюрная имитация графика внутри превью */
+    .mock-chart {
+        position: absolute;
+        bottom: 15px;
+        left: 20px;
+        right: 20px;
+        height: 50px;
+        display: flex;
+        align-items: flex-end;
+        gap: 4px;
+    }
+
+    .mock-bar {
+        flex: 1;
+        background: linear-gradient(180deg, rgba(21, 56, 140, 0.2) 0%, rgba(21, 56, 140, 0.05) 100%);
+        border-top-left-radius: 2px;
+        border-top-right-radius: 2px;
+        transition: height 0.5s;
+    }
+
+    .widget-card:hover .mock-bar {
+        background: linear-gradient(180deg, #15388c 0%, rgba(21, 56, 140, 0.4) 100%);
+    }
+
+    .widget-badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 700;
+        z-index: 2;
+    }
+
+    .badge-feasible {
+        background: #e6fffa;
+        color: #047481;
+    }
+
+    .badge-locked {
+        background: #fff5f5;
+        color: #e53e3e;
+    }
+
+    .widget-info {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+    }
+
+    .widget-name {
+        font-size: 16px;
+        font-weight: 700;
+        color: #1a202c;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .widget-name i {
+        color: #15388c;
+        font-size: 14px;
+    }
+
+    .widget-desc {
+        font-size: 12px;
+        color: #718096;
+        margin-bottom: 16px;
+        flex-grow: 1;
+        line-height: 1.5;
+    }
+
+    .widget-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: auto;
+        padding-top: 12px;
+        border-top: 1px solid #edf2f7;
+    }
+
+    .widget-score {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #4a5568;
+    }
+
+    .widget-score i {
+        color: #ecc94b;
+    }
+
+    .widget-action-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 8px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: none;
+        transition: all 0.2s;
+    }
+
+    .btn-add {
+        background: #15388c;
+        color: #fff;
+    }
+
+    .btn-add:hover {
+        background: #0e2467;
+    }
+
+    .btn-remove {
+        background: #fff5f5;
+        color: #e53e3e;
+        border: 1px solid #fed7d7;
+    }
+
+    .btn-remove:hover {
+        background: #fed7d7;
+    }
+
+    .reason-tooltip {
+        font-size: 10px;
+        color: #e53e3e;
+        background: #fff5f5;
+        border: 1px solid #fed7d7;
+        padding: 6px;
+        border-radius: 6px;
+        margin-top: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="catalog-header">
+    <div class="catalog-title">
+        <h1>Каталог аналитики</h1>
+        <p>Набор готовых аналитических блоков под ваши бизнес-метрики. Проранжировано по ценности для <strong>{{ dataset.name }}</strong></p>
+    </div>
+    <a href="{% url 'home' %}?dataset_id={{ dataset.id }}" class="btn-primary" style="background: transparent; border: 1px solid #15388c; color: #15388c;">
+        <i class="fa-solid fa-house"></i> На дашборд
+    </a>
+</div>
+
+<!-- Категории-вкладки -->
+<div class="category-tabs">
+    {% for cat_id, cat in categorized_analytics.items %}
+    <a href="#cat-{{ cat_id }}" class="category-tab">
+        <i class="fa-solid {{ cat.info.icon }}"></i>
+        {{ cat.info.name }}
+        <span class="badge" style="background: rgba(0,0,0,0.06); color: #4a5568; font-size: 10px; border-radius: 20px; padding: 2px 6px;">
+            {{ cat.feasible_count }}/{{ cat.total_count }}
+        </span>
+    </a>
+    {% endfor %}
+</div>
+
+<!-- Блоки категорий -->
+{% for cat_id, cat in categorized_analytics.items %}
+<div class="category-section" id="cat-{{ cat_id }}">
+    <div class="category-section-title">
+        <i class="fa-solid {{ cat.info.icon }}" style="color: {{ cat.info.color }}"></i>
+        {{ cat.info.name }}
+        <span>Доступно: {{ cat.feasible_count }} из {{ cat.total_count }}</span>
+    </div>
+
+    <div class="widgets-grid">
+        {% for widget in cat.items %}
+        <div class="widget-card">
+            <!-- Превью -->
+            <div class="widget-preview-box">
+                <i class="fa-solid {{ widget.icon }} preview-main-icon" style="color: {{ cat.info.color }}; opacity: 0.2;"></i>
+                
+                <!-- Декоративные мини-графики -->
+                <div class="mock-chart">
+                    {% if widget.category == 'trends' %}
+                        <!-- Имитация линии тренда -->
+                        <svg viewBox="0 0 100 40" style="width: 100%; height: 100%; stroke: {{ cat.info.color }}; fill: none; stroke-width: 2;">
+                            <path d="M 0 35 Q 25 15 50 25 T 100 5"></path>
+                        </svg>
+                    {% elif widget.category == 'overview' %}
+                        <!-- Имитация пирога -->
+                        <div style="width: 40px; height: 40px; border-radius: 50%; border: 6px solid #e2e8f0; border-top-color: {{ cat.info.color }}; margin: 0 auto;"></div>
+                    {% else %}
+                        <!-- Имитация столбцов -->
+                        <div class="mock-bar" style="height: 30%;"></div>
+                        <div class="mock-bar" style="height: 50%;"></div>
+                        <div class="mock-bar" style="height: 40%;"></div>
+                        <div class="mock-bar" style="height: 75%;"></div>
+                        <div class="mock-bar" style="height: 60%;"></div>
+                    {% endif %}
+                </div>
+
+                {% if widget.feasible %}
+                    <span class="widget-badge badge-feasible">Доступно</span>
+                {% else %}
+                    <span class="widget-badge badge-locked">Недоступно</span>
+                {% endif %}
+            </div>
+
+            <!-- Контент -->
+            <div class="widget-info">
+                <div class="widget-name">
+                    <i class="fa-solid {{ widget.icon }}" style="color: {{ cat.info.color }}"></i>
+                    {{ widget.name }}
+                </div>
+                
+                <!-- Короткий текст (как просил пользователь) -->
+                <div class="widget-desc">{{ widget.short_desc }}</div>
+
+                <div class="widget-footer">
+                    {% if widget.feasible %}
+                        <div class="widget-score" title="Оценка полезности на основе полноты ваших данных">
+                            <i class="fa-solid fa-star"></i>
+                            {{ widget.score }}
+                        </div>
+                        
+                        {% if widget.is_added %}
+                            <a href="{% url 'remove_widget' widget.widget_id %}?next={{ request.get_full_path|urlencode }}" class="widget-action-btn btn-remove">
+                                <i class="fa-solid fa-check"></i> Добавлено
+                            </a>
+                        {% else %}
+                            <form method="post" action="{% url 'add_widget' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="dataset_id" value="{{ dataset.id }}">
+                                <input type="hidden" name="analytics_id" value="{{ widget.id }}">
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button type="submit" class="widget-action-btn btn-add">
+                                    <i class="fa-solid fa-plus"></i> Выбрать блок
+                                </button>
+                            </form>
+                        {% endif %}
+                    {% else %}
+                        <div style="font-size: 11px; color: #a0aec0; width: 100%;">
+                            <div class="reason-tooltip">
+                                <i class="fa-solid fa-lock"></i> {{ widget.reason }}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

@@ -4,21 +4,148 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout as auth_logout
 from django.http import JsonResponse
-from .models import UserProfile, Dataset, ColumnMapping
+from .models import UserProfile, Dataset, ColumnMapping, DashboardWidget
+from .analytics_catalog import get_by_id
+from .analytics_engine import get_ranked_analytics, get_top_recommendations, get_by_category_ranked
+from .chart_generator import generate_plotly_chart
 
 
 @login_required
 def main_f(request):
     """
-    Главная страница (дашборд).
-    Показываем список датасетов пользователя.
-
-    @login_required — декоратор Django. Он означает:
-    "если пользователь НЕ авторизован — перенаправь его на страницу входа".
-    Это как охранник на входе в офис.
+    Главная страница (автоматические дашборды).
+    Выводит сетку выбранных визуализаций и проранжированные рекомендации.
     """
-    datasets = Dataset.objects.filter(user=request.user)
-    return render(request, 'main/main.html', {'datasets': datasets})
+    datasets = Dataset.objects.filter(user=request.user, status='ready')
+    active_dataset = None
+    
+    # Разрешаем выбрать активный датасет из выпадающего списка
+    dataset_id = request.GET.get('dataset_id')
+    if dataset_id:
+        active_dataset = datasets.filter(id=dataset_id).first()
+        
+    if not active_dataset:
+        active_dataset = datasets.first()
+        
+    widgets = []
+    recommendations = []
+    
+    if active_dataset:
+        widgets = DashboardWidget.objects.filter(user=request.user, dataset=active_dataset).order_by('position')
+        
+        # Получаем рекомендации (топ-4 доступных и не добавленных)
+        recommendations, _ = get_top_recommendations(request.user, active_dataset.id, limit=4)
+        
+        # Обогащаем виджеты данными графиков Plotly и метаданными из каталога
+        for w in widgets:
+            w.chart_json = generate_plotly_chart(w.analytics_id, active_dataset)
+            cat_item = get_by_id(w.analytics_id)
+            if cat_item:
+                w.name = cat_item['name']
+                w.short_desc = cat_item['short_desc']
+                w.icon = cat_item['icon']
+            else:
+                w.name = w.analytics_id
+                w.short_desc = ""
+                w.icon = "fa-chart-simple"
+                
+    # Все датасеты пользователя для селектора (даже в процессе обработки)
+    all_datasets = Dataset.objects.filter(user=request.user)
+    
+    return render(request, 'main/main.html', {
+        'datasets': all_datasets,
+        'ready_datasets': datasets,
+        'active_dataset': active_dataset,
+        'widgets': widgets,
+        'recommendations': recommendations,
+    })
+
+
+@login_required
+def catalog_f(request, dataset_id):
+    """
+    Каталог всех видов аналитики (100 штук), проранжированных
+    под конкретный датасет и разбитых по 5 категориям.
+    """
+    dataset = get_object_or_404(Dataset, id=dataset_id, user=request.user)
+    categorized_analytics, _ = get_by_category_ranked(request.user, dataset.id)
+    
+    return render(request, 'main/catalog.html', {
+        'dataset': dataset,
+        'categorized_analytics': categorized_analytics,
+    })
+
+
+@login_required
+def add_widget_f(request):
+    """Добавление визуализации на дашборд."""
+    if request.method == "POST":
+        dataset_id = request.POST.get('dataset_id')
+        analytics_id = request.POST.get('analytics_id')
+        
+        dataset = get_object_or_404(Dataset, id=dataset_id, user=request.user)
+        
+        # Проверяем на дубликаты
+        exists = DashboardWidget.objects.filter(
+            user=request.user, dataset=dataset, analytics_id=analytics_id
+        ).exists()
+        
+        if not exists:
+            count = DashboardWidget.objects.filter(user=request.user, dataset=dataset).count()
+            DashboardWidget.objects.create(
+                user=request.user,
+                dataset=dataset,
+                analytics_id=analytics_id,
+                position=count
+            )
+            
+        next_url = request.POST.get('next', f'/main/?dataset_id={dataset_id}')
+        return redirect(next_url)
+        
+    return redirect('/main/')
+
+
+@login_required
+def remove_widget_f(request, widget_id):
+    """Удаление визуализации с дашборда."""
+    widget = get_object_or_404(DashboardWidget, id=widget_id, user=request.user)
+    dataset_id = widget.dataset.id
+    widget.delete()
+    
+    # Пересчитываем позиции
+    widgets = DashboardWidget.objects.filter(user=request.user, dataset_id=dataset_id).order_by('position')
+    for i, w in enumerate(widgets):
+        w.position = i
+        w.save()
+        
+    next_url = request.GET.get('next', f'/main/?dataset_id={dataset_id}')
+    return redirect(next_url)
+
+
+@login_required
+def clear_dashboard_f(request, dataset_id):
+    """Удаление всех визуализаций с дашборда."""
+    dataset = get_object_or_404(Dataset, id=dataset_id, user=request.user)
+    DashboardWidget.objects.filter(user=request.user, dataset=dataset).delete()
+    return redirect(f'/main/?dataset_id={dataset.id}')
+
+
+@login_required
+def reorder_widgets_f(request):
+    """Сортировка виджетов через Drag-and-Drop (AJAX)."""
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            widget_ids = data.get('widget_ids', [])
+            for index, w_id in enumerate(widget_ids):
+                DashboardWidget.objects.filter(
+                    id=w_id, user=request.user
+                ).update(position=index)
+            return JsonResponse({'status': 'ok'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+            
+    return JsonResponse({'status': 'error'}, status=400)
 
 
 @login_required

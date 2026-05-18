@@ -11,4 +11,11 @@ urlpatterns = [
     path('settings/', views.settings_f, name='settings'),
     path('about/', views.about_f, name='about'),
     path('logout/', views.logout_f, name='logout'),
+    
+    # Автоматические дашборды
+    path('catalog/<int:dataset_id>/', views.catalog_f, name='catalog'),
+    path('widget/add/', views.add_widget_f, name='add_widget'),
+    path('widget/remove/<int:widget_id>/', views.remove_widget_f, name='remove_widget'),
+    path('widget/clear/<int:dataset_id>/', views.clear_dashboard_f, name='clear_dashboard'),
+    path('widget/reorder/', views.reorder_widgets_f, name='reorder_widgets'),
 ]
