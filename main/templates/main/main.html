@@ -29,6 +29,75 @@
         margin-bottom: 5px;
     }
 
+    .dashboard-title p {
+        color: #5c677d;
+        margin: 0;
+    }
+
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+
+    .company-profile-btn {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+        padding: 8px 16px;
+        background: rgba(255, 255, 255, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        border-radius: 16px;
+        transition: all 0.3s;
+    }
+
+    .company-profile-btn:hover {
+        background: #fff;
+        box-shadow: 0 4px 15px rgba(21, 56, 140, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .company-avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid #15388c;
+    }
+
+    .company-avatar-placeholder {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #15388c 0%, #3066be 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        border: 2px solid rgba(255, 255, 255, 0.8);
+    }
+
+    .company-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .company-name {
+        font-weight: 700;
+        color: #1a202c;
+        font-size: 15px;
+        line-height: 1.2;
+    }
+
+    .company-subtext {
+        font-size: 12px;
+        color: #718096;
+        line-height: 1.2;
+    }
+
     .dataset-selector {
         padding: 10px 16px;
         border: 1px solid #cbd5e0;
@@ -291,18 +360,31 @@
         <h1>Интеллектуальный дашборд</h1>
         <p>Добро пожаловать в центр автоматического бизнес-анализа!</p>
     </div>
+    <div class="header-actions">
+        {% if ready_datasets %}
+        <div>
+            <select class="dataset-selector" id="dataset-picker" onchange="switchDataset(this.value)">
+                {% for ds in ready_datasets %}
+                <option value="{{ ds.id }}" {% if ds.id == active_dataset.id %}selected{% endif %}>
+                    📊 {{ ds.name }} ({{ ds.rows_count }} стр.)
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
 
-    {% if ready_datasets %}
-    <div>
-        <select class="dataset-selector" id="dataset-picker" onchange="switchDataset(this.value)">
-            {% for ds in ready_datasets %}
-            <option value="{{ ds.id }}" {% if ds.id == active_dataset.id %}selected{% endif %}>
-                📊 {{ ds.name }} ({{ ds.rows_count }} стр.)
-            </option>
-            {% endfor %}
-        </select>
+        <a href="{% url 'settings' %}" class="company-profile-btn">
+            {% if profile.avatar %}
+            <img src="{{ profile.avatar.url }}" alt="Avatar" class="company-avatar">
+            {% else %}
+            <div class="company-avatar-placeholder"><i class="fa-solid fa-building"></i></div>
+            {% endif %}
+            <div class="company-info">
+                <span class="company-name">{{ profile.company_name|default:"Моя компания" }}</span>
+                <span class="company-subtext">Настройки профиля</span>
+            </div>
+        </a>
     </div>
-    {% endif %}
 </div>
 
 {% if active_dataset %}
