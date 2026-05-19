@@ -16,6 +16,7 @@ def main_f(request):
     Главная страница (автоматические дашборды).
     Выводит сетку выбранных визуализаций и проранжированные рекомендации.
     """
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
     datasets = Dataset.objects.filter(user=request.user, status='ready')
     active_dataset = None
     
@@ -53,6 +54,7 @@ def main_f(request):
     all_datasets = Dataset.objects.filter(user=request.user)
     
     return render(request, 'main/main.html', {
+        'profile': profile,
         'datasets': all_datasets,
         'ready_datasets': datasets,
         'active_dataset': active_dataset,

@@ -286,9 +286,11 @@
 <div class="catalog-header">
     <div class="catalog-title">
         <h1>Каталог аналитики</h1>
-        <p>Набор готовых аналитических блоков под ваши бизнес-метрики. Проранжировано по ценности для <strong>{{ dataset.name }}</strong></p>
+        <p>Набор готовых аналитических блоков под ваши бизнес-метрики. Проранжировано по ценности для <strong>{{
+                dataset.name }}</strong></p>
     </div>
-    <a href="{% url 'home' %}?dataset_id={{ dataset.id }}" class="btn-primary" style="background: transparent; border: 1px solid #15388c; color: #15388c;">
+    <a href="{% url 'home' %}?dataset_id={{ dataset.id }}" class="btn-primary"
+        style="background: transparent; border: 1px solid #15388c; color: #15388c;">
         <i class="fa-solid fa-house"></i> На дашборд
     </a>
 </div>
@@ -299,7 +301,8 @@
     <a href="#cat-{{ cat_id }}" class="category-tab">
         <i class="fa-solid {{ cat.info.icon }}"></i>
         {{ cat.info.name }}
-        <span class="badge" style="background: rgba(0,0,0,0.06); color: #4a5568; font-size: 10px; border-radius: 20px; padding: 2px 6px;">
+        <span class="badge"
+            style="background: rgba(0,0,0,0.06); color: #4a5568; font-size: 10px; border-radius: 20px; padding: 2px 6px;">
             {{ cat.feasible_count }}/{{ cat.total_count }}
         </span>
     </a>
@@ -320,32 +323,36 @@
         <div class="widget-card">
             <!-- Превью -->
             <div class="widget-preview-box">
-                <i class="fa-solid {{ widget.icon }} preview-main-icon" style="color: {{ cat.info.color }}; opacity: 0.2;"></i>
-                
+                <i class="fa-solid {{ widget.icon }} preview-main-icon"
+                    style="color: {{ cat.info.color }}; opacity: 0.2;"></i>
+
                 <!-- Декоративные мини-графики -->
                 <div class="mock-chart">
                     {% if widget.category == 'trends' %}
-                        <!-- Имитация линии тренда -->
-                        <svg viewBox="0 0 100 40" style="width: 100%; height: 100%; stroke: {{ cat.info.color }}; fill: none; stroke-width: 2;">
-                            <path d="M 0 35 Q 25 15 50 25 T 100 5"></path>
-                        </svg>
+                    <!-- Имитация линии тренда -->
+                    <svg viewBox="0 0 100 40"
+                        style="width: 100%; height: 100%; stroke: {{ cat.info.color }}; fill: none; stroke-width: 2;">
+                        <path d="M 0 35 Q 25 15 50 25 T 100 5"></path>
+                    </svg>
                     {% elif widget.category == 'overview' %}
-                        <!-- Имитация пирога -->
-                        <div style="width: 40px; height: 40px; border-radius: 50%; border: 6px solid #e2e8f0; border-top-color: {{ cat.info.color }}; margin: 0 auto;"></div>
+                    <!-- Имитация пирога -->
+                    <div
+                        style="width: 40px; height: 40px; border-radius: 50%; border: 6px solid #e2e8f0; border-top-color: {{ cat.info.color }}; margin: 0 auto;">
+                    </div>
                     {% else %}
-                        <!-- Имитация столбцов -->
-                        <div class="mock-bar" style="height: 30%;"></div>
-                        <div class="mock-bar" style="height: 50%;"></div>
-                        <div class="mock-bar" style="height: 40%;"></div>
-                        <div class="mock-bar" style="height: 75%;"></div>
-                        <div class="mock-bar" style="height: 60%;"></div>
+                    <!-- Имитация столбцов -->
+                    <div class="mock-bar" style="height: 30%;"></div>
+                    <div class="mock-bar" style="height: 50%;"></div>
+                    <div class="mock-bar" style="height: 40%;"></div>
+                    <div class="mock-bar" style="height: 75%;"></div>
+                    <div class="mock-bar" style="height: 60%;"></div>
                     {% endif %}
                 </div>
 
                 {% if widget.feasible %}
-                    <span class="widget-badge badge-feasible">Доступно</span>
+                <span class="widget-badge badge-feasible">Доступно</span>
                 {% else %}
-                    <span class="widget-badge badge-locked">Недоступно</span>
+                <span class="widget-badge badge-locked">Недоступно</span>
                 {% endif %}
             </div>
 
@@ -355,38 +362,39 @@
                     <i class="fa-solid {{ widget.icon }}" style="color: {{ cat.info.color }}"></i>
                     {{ widget.name }}
                 </div>
-                
+
                 <!-- Короткий текст (как просил пользователь) -->
                 <div class="widget-desc">{{ widget.short_desc }}</div>
 
                 <div class="widget-footer">
                     {% if widget.feasible %}
-                        <div class="widget-score" title="Оценка полезности на основе полноты ваших данных">
-                            <i class="fa-solid fa-star"></i>
-                            {{ widget.score }}
-                        </div>
-                        
-                        {% if widget.is_added %}
-                            <a href="{% url 'remove_widget' widget.widget_id %}?next={{ request.get_full_path|urlencode }}" class="widget-action-btn btn-remove">
-                                <i class="fa-solid fa-check"></i> Добавлено
-                            </a>
-                        {% else %}
-                            <form method="post" action="{% url 'add_widget' %}">
-                                {% csrf_token %}
-                                <input type="hidden" name="dataset_id" value="{{ dataset.id }}">
-                                <input type="hidden" name="analytics_id" value="{{ widget.id }}">
-                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                <button type="submit" class="widget-action-btn btn-add">
-                                    <i class="fa-solid fa-plus"></i> Выбрать блок
-                                </button>
-                            </form>
-                        {% endif %}
+                    <div class="widget-score" title="Оценка полезности на основе полноты ваших данных">
+                        <i class="fa-solid fa-star"></i>
+                        {{ widget.score }}
+                    </div>
+
+                    {% if widget.is_added %}
+                    <a href="{% url 'remove_widget' widget.widget_id %}?next={{ request.get_full_path|urlencode }}"
+                        class="widget-action-btn btn-remove">
+                        <i class="fa-solid fa-check"></i> Добавлено
+                    </a>
                     {% else %}
-                        <div style="font-size: 11px; color: #a0aec0; width: 100%;">
-                            <div class="reason-tooltip">
-                                <i class="fa-solid fa-lock"></i> {{ widget.reason }}
-                            </div>
+                    <form method="post" action="{% url 'add_widget' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="dataset_id" value="{{ dataset.id }}">
+                        <input type="hidden" name="analytics_id" value="{{ widget.id }}">
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" class="widget-action-btn btn-add">
+                            <i class="fa-solid fa-plus"></i> Выбрать блок
+                        </button>
+                    </form>
+                    {% endif %}
+                    {% else %}
+                    <div style="font-size: 11px; color: #a0aec0; width: 100%;">
+                        <div class="reason-tooltip">
+                            <i class="fa-solid fa-lock"></i> {{ widget.reason }}
                         </div>
+                    </div>
                     {% endif %}
                 </div>
             </div>
