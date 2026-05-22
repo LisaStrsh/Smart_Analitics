@@ -4,128 +4,128 @@ from django.contrib.auth.models import User
 
 class UserProfile(models.Model):
     """
-    Расширение стандартного пользователя Django.
-    Django уже имеет модель User с полями: username, password, email.
-    Мы добавляем к ней доп. информацию через связь один-к-одному (OneToOneField).
+    Extension of the standard Django user.
+    Django already has a User model with fields: username, password, email.
+    We add additional information to it via a one-to-one relationship (OneToOneField).
 
-    Простыми словами: у каждого User ровно один UserProfile, 
-    и в нём лежит то, чего нет в стандартном User — название компании и аватарка.
+    In simple terms: each User has exactly one UserProfile, 
+    and it contains what is not in the standard User — company name and avatar.
     """
     user = models.OneToOneField(
         User,
-        on_delete=models.CASCADE,  # если User удалён — удаляем и профиль
-        related_name='profile'     # чтобы можно было писать user.profile
+        on_delete=models.CASCADE,  # if User is deleted — delete the profile too
+        related_name='profile'     # to allow writing user.profile
     )
     company_name = models.CharField(
         max_length=255,
-        blank=True,      # можно оставить пустым в форме
-        default='',      # по умолчанию — пустая строка
-        verbose_name='Название компании'
+        blank=True,      # can be left empty in the form
+        default='',      # empty string by default
+        verbose_name='Company Name'
     )
     avatar = models.ImageField(
-        upload_to='avatars/',   # файлы аватарок сохраняются в папку media/avatars/
+        upload_to='avatars/',   # avatar files are saved to the media/avatars/ folder
         blank=True,
         null=True,
-        verbose_name='Аватар'
+        verbose_name='Avatar'
     )
-    created_at = models.DateTimeField(auto_now_add=True)  # дата создания профиля
+    created_at = models.DateTimeField(auto_now_add=True)  # profile creation date
 
     def __str__(self):
-        return f"{self.user.username} — {self.company_name or 'Без компании'}"
+        return f"{self.user.username} - {self.company_name or 'No Company'}"
 
     class Meta:
-        verbose_name = 'Профиль пользователя'
-        verbose_name_plural = 'Профили пользователей'
+        verbose_name = 'User Profile'
+        verbose_name_plural = 'User Profiles'
 
 
 class Dataset(models.Model):
     """
-    Метаданные загруженного файла (Excel/CSV).
+    Metadata of the uploaded file (Excel/CSV).
     
-    Мы НЕ храним содержимое файла в БД — сам файл лежит на диске.
-    В БД мы записываем только: кто загрузил, когда, как называется файл,
-    и в каком состоянии он сейчас (загружается / обработан / ошибка).
+    We DO NOT store the file content in the DB — the file itself is on the disk.
+    In the DB we only record: who uploaded it, when, what the file is named,
+    and what state it is currently in (uploading / processing / error).
 
-    Простыми словами: это "каталожная карточка" для каждого файла.
+    In simple terms: this is a "catalog card" for each file.
     """
     STATUS_CHOICES = [
-        ('uploading', 'Загружается'),
-        ('processing', 'Обрабатывается'),
-        ('ready', 'Готов'),
-        ('error', 'Ошибка'),
+        ('uploading', 'Uploading'),
+        ('processing', 'Processing'),
+        ('ready', 'Ready'),
+        ('error', 'Error'),
     ]
 
     user = models.ForeignKey(
         User,
-        on_delete=models.CASCADE,  # если User удалён — удаляем и его файлы
-        related_name='datasets'    # чтобы можно было: user.datasets.all()
+        on_delete=models.CASCADE,  # if User is deleted — delete their files too
+        related_name='datasets'    # to allow: user.datasets.all()
     )
     name = models.CharField(
         max_length=255,
-        verbose_name='Название датасета'
+        verbose_name='Dataset Name'
     )
     file = models.FileField(
-        upload_to='datasets/',     # файлы сохраняются в media/datasets/
-        verbose_name='Файл'
+        upload_to='datasets/',     # files are saved in media/datasets/
+        verbose_name='File'
     )
     original_filename = models.CharField(
         max_length=255,
-        verbose_name='Оригинальное имя файла'
+        verbose_name='Original Filename'
     )
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
         default='uploading',
-        verbose_name='Статус обработки'
+        verbose_name='Processing Status'
     )
     uploaded_at = models.DateTimeField(auto_now_add=True)
-    rows_count = models.IntegerField(default=0, verbose_name='Количество строк')
-    columns_count = models.IntegerField(default=0, verbose_name='Количество колонок')
+    rows_count = models.IntegerField(default=0, verbose_name='Rows Count')
+    columns_count = models.IntegerField(default=0, verbose_name='Columns Count')
 
     def __str__(self):
-        return f"{self.name} ({self.original_filename}) — {self.get_status_display()}"
+        return f"{self.name} ({self.original_filename}) - {self.get_status_display()}"
 
     class Meta:
-        verbose_name = 'Датасет'
-        verbose_name_plural = 'Датасеты'
-        ordering = ['-uploaded_at']  # новые файлы — сверху
+        verbose_name = 'Dataset'
+        verbose_name_plural = 'Datasets'
+        ordering = ['-uploaded_at']  # new files — on top
 
 
 class ColumnMapping(models.Model):
     """
-    Маппинг колонок: связь между названием колонки в файле пользователя
-    и стандартным внутренним названием в нашей системе.
+    Column mapping: the connection between the column name in the user's file
+    and the standard internal name in our system.
 
-    Пример:
-        user_column_name = "товар"        (как называет пользователь)
-        standard_name    = "goods_name"   (как называем мы в системе для аналитики)
+    Example:
+        user_column_name = "product"        (as the user calls it)
+        standard_name    = "goods_name"   (as we call it in the system for analytics)
 
-    Зачем это нужно: автоаналитик должен понимать, что в колонке лежит.
-    Пользователь может назвать колонку как угодно, а мы "маппим" её 
-    на стандартное имя, чтобы графики и формулы работали одинаково для всех.
+    Why this is needed: the auto-analyst must understand what is in the column.
+    The user can name the column whatever they want, and we "map" it 
+    to a standard name so that charts and formulas work the same for everyone.
     """
     STANDARD_COLUMNS = [
-        ('goods_name', 'Название товара'),
-        ('goods_category', 'Категория товара'),
-        ('quantity', 'Количество'),
-        ('price', 'Цена'),
-        ('total', 'Сумма / Выручка'),
-        ('cost', 'Себестоимость'),
-        ('date', 'Дата'),
-        ('time', 'Время'),
-        ('datetime', 'Дата и Время'),
-        ('supplier', 'Поставщик'),
-        ('customer', 'Клиент / Покупатель'),
-        ('customer_group', 'Группа клиентов'),
-        ('order_id', 'Номер заказа'),
-        ('status', 'Статус'),
-        ('payment_method', 'Способ оплаты'),
-        ('store', 'Магазин / Точка'),
-        ('city', 'Город / Регион'),
-        ('manager', 'Менеджер / Сотрудник'),
-        ('discount', 'Скидка'),
-        ('promo', 'Промокод / Акция'),
-        ('other', 'Прочее'),
+        ('goods_name', 'Product Name'),
+        ('goods_category', 'Product Category'),
+        ('quantity', 'Quantity'),
+        ('price', 'Price'),
+        ('total', 'Total / Revenue'),
+        ('cost', 'Cost'),
+        ('date', 'Date'),
+        ('time', 'Time'),
+        ('datetime', 'Date and Time'),
+        ('supplier', 'Supplier'),
+        ('customer', 'Customer / Buyer'),
+        ('customer_group', 'Customer Group'),
+        ('order_id', 'Order ID'),
+        ('status', 'Status'),
+        ('payment_method', 'Payment Method'),
+        ('store', 'Store / Point of Sale'),
+        ('city', 'City / Region'),
+        ('manager', 'Manager / Employee'),
+        ('discount', 'Discount'),
+        ('promo', 'Promo / Campaign'),
+        ('other', 'Other'),
     ]
 
     dataset = models.ForeignKey(
@@ -135,39 +135,93 @@ class ColumnMapping(models.Model):
     )
     user_column_name = models.CharField(
         max_length=255,
-        verbose_name='Название колонки у пользователя'
+        verbose_name='Column Name by User'
     )
     standard_name = models.CharField(
         max_length=50,
         choices=STANDARD_COLUMNS,
         default='other',
-        verbose_name='Стандартное название в системе'
+        verbose_name='Standard System Name'
     )
 
     def __str__(self):
-        return f"{self.user_column_name} → {self.get_standard_name_display()}"
+        return f"{self.user_column_name} -> {self.get_standard_name_display()}"
 
     class Meta:
-        verbose_name = 'Маппинг колонки'
-        verbose_name_plural = 'Маппинги колонок'
-        unique_together = ['dataset', 'user_column_name']  # одна колонка — один маппинг
+        verbose_name = 'Column Mapping'
+        verbose_name_plural = 'Column Mappings'
+        unique_together = ['dataset', 'user_column_name']  # one column — one mapping
 
 
 class DashboardWidget(models.Model):
     """
-    Виджет на дашборде пользователя.
-    Хранит: какой тип визуализации, к какому датасету привязан, позиция на странице.
+    Widget on the user's dashboard.
+    Stores: what type of visualization, which dataset it is tied to, position on the page.
     """
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='dashboard_widgets')
     dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name='widgets')
-    analytics_id = models.CharField(max_length=100, verbose_name='ID аналитики из каталога')
-    position = models.IntegerField(default=0, verbose_name='Позиция на дашборде')
+    analytics_id = models.CharField(max_length=100, verbose_name='Analytics ID from Catalog')
+    position = models.IntegerField(default=0, verbose_name='Position on Dashboard')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.analytics_id} — {self.dataset.name} (pos {self.position})"
+        return f"{self.analytics_id} - {self.dataset.name} (pos {self.position})"
 
     class Meta:
-        verbose_name = 'Виджет дашборда'
-        verbose_name_plural = 'Виджеты дашборда'
+        verbose_name = 'Dashboard Widget'
+        verbose_name_plural = 'Dashboard Widgets'
         ordering = ['position']
+
+
+class Employee(models.Model):
+    """
+    Employee - account generated by the administrator.
+    
+    The administrator creates an employee for a specific dataset.
+    The system generates a login and password. The employee logs in with these
+    credentials and only sees the form for adding rows to the table,
+    where form fields = column names of the administrator's dataset.
+    
+    owner - administrator who created this employee
+    user - Django User account of the employee (for authorization)
+    dataset - dataset to which the employee is attached
+    display_name - readable name of the employee (e.g., "Manager Ivan")
+    generated_password - password in plain text (to show the admin once)
+    """
+    owner = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='employees',
+        verbose_name='Administrator'
+    )
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='employee_profile',
+        verbose_name='Employee Account'
+    )
+    dataset = models.ForeignKey(
+        Dataset,
+        on_delete=models.CASCADE,
+        related_name='employees',
+        verbose_name='Attached Dataset'
+    )
+    display_name = models.CharField(
+        max_length=255,
+        blank=True,
+        default='',
+        verbose_name='Employee Name'
+    )
+    generated_password = models.CharField(
+        max_length=50,
+        verbose_name='Generated Password'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.display_name or self.user.username} -> {self.dataset.name}"
+
+    class Meta:
+        verbose_name = 'Employee'
+        verbose_name_plural = 'Employees'
+        ordering = ['-created_at']

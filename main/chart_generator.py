@@ -9,8 +9,8 @@ from .models import Dataset, ColumnMapping
 
 def get_mapped_df(dataset):
     """
-    Загружает датасет и переименовывает колонки в соответствии с маппингом.
-    Возвращает DataFrame и словарь обратного маппинга.
+    Loads dataset and renames columns according to mapping.
+    Returns DataFrame and reverse mapping dictionary.
     """
     file_path = dataset.file.path
     if dataset.original_filename.endswith('.csv'):
@@ -18,7 +18,7 @@ def get_mapped_df(dataset):
     else:
         df = pd.read_excel(file_path)
     
-    # Получаем маппинги
+    # Get mappings
     mappings = dataset.column_mappings.exclude(standard_name='other')
     rename_dict = {}
     reverse_rename = {}
@@ -27,19 +27,19 @@ def get_mapped_df(dataset):
         rename_dict[m.user_column_name] = m.standard_name
         reverse_rename[m.standard_name] = m.user_column_name
         
-    # Удаляем из датафрейма все оригинальные колонки, имена которых случайно совпадают с целевыми
-    # (но при этом они не являются теми колонками, которые мы переименовываем сами в себя)
+    # Drop from dataframe all original columns that coincidentally match target names
+    # (but are not the columns we are renaming to themselves)
     target_names = set(rename_dict.values())
     cols_to_drop = [c for c in df.columns if c in target_names and rename_dict.get(c) != c]
     df = df.drop(columns=cols_to_drop)
         
     df = df.rename(columns=rename_dict)
     
-    # Удаляем дублирующиеся колонки (на случай, если пользователь всё-таки замапил две колонки на одно имя)
+    # Drop duplicated columns
     df = df.loc[:, ~df.columns.duplicated()]
     
     
-    # Приводим типы
+    # Cast types
     if 'date' in df.columns:
         df['date'] = pd.to_datetime(df['date'], errors='coerce')
         df = df.dropna(subset=['date']).sort_values('date')
@@ -52,19 +52,19 @@ def get_mapped_df(dataset):
 
 def generate_plotly_chart(analytics_id, dataset):
     """
-    Генерирует Plotly-график для конкретного вида аналитики.
-    Возвращает JSON-строку графика (или словарь) для Plotly.js.
+    Generates Plotly chart for specific analytics type.
+    Returns JSON string of the chart for Plotly.js.
     """
     try:
         df, reverse_rename = get_mapped_df(dataset)
         if df.empty:
-            return get_error_chart("Данные в файле отсутствуют или повреждены.")
+            return get_error_chart("Data in the file is missing or corrupted.")
         
-        # Получаем исходные имена колонок для подписей осей
+        # Get original column names for axis labels
         def get_label(std_name, default):
             return reverse_rename.get(std_name, default)
 
-        # Шаблон оформления ( Sleek Dark / Premium Glass )
+        # Theme
         layout_theme = dict(
             paper_bgcolor='rgba(255,255,255,0)',
             plot_bgcolor='rgba(255,255,255,0)',
@@ -81,8 +81,8 @@ def generate_plotly_chart(analytics_id, dataset):
             fig = go.Figure(go.Indicator(
                 mode = "number",
                 value = total,
-                number = {'valueformat': ',.2f', 'suffix': ' ₽', 'font': {'size': 48, 'color': '#15388c'}},
-                title = {"text": "Общая выручка", "font": {"size": 16, "color": "#8d99ae"}}
+                number = {'valueformat': ',.2f', 'suffix': ' USD', 'font': {'size': 48, 'color': '#15388c'}},
+                title = {"text": "Total Revenue", "font": {"size": 16, "color": "#8d99ae"}}
             ))
             fig.update_layout(height=200, **layout_theme)
 
@@ -93,7 +93,7 @@ def generate_plotly_chart(analytics_id, dataset):
                 mode = "number",
                 value = orders,
                 number = {'valueformat': ',', 'font': {'size': 48, 'color': '#15388c'}},
-                title = {"text": "Всего заказов", "font": {"size": 16, "color": "#8d99ae"}}
+                title = {"text": "Total Orders", "font": {"size": 16, "color": "#8d99ae"}}
             ))
             fig.update_layout(height=200, **layout_theme)
 
@@ -106,8 +106,8 @@ def generate_plotly_chart(analytics_id, dataset):
             fig = go.Figure(go.Indicator(
                 mode = "number",
                 value = avg,
-                number = {'valueformat': ',.2f', 'suffix': ' ₽', 'font': {'size': 48, 'color': '#15388c'}},
-                title = {"text": "Средний чек", "font": {"size": 16, "color": "#8d99ae"}}
+                number = {'valueformat': ',.2f', 'suffix': ' USD', 'font': {'size': 48, 'color': '#15388c'}},
+                title = {"text": "Average Check", "font": {"size": 16, "color": "#8d99ae"}}
             ))
             fig.update_layout(height=200, **layout_theme)
 
@@ -118,7 +118,7 @@ def generate_plotly_chart(analytics_id, dataset):
                 mode = "number",
                 value = qty,
                 number = {'valueformat': ',', 'font': {'size': 48, 'color': '#59a14f'}},
-                title = {"text": "Продано товаров (шт)", "font": {"size": 16, "color": "#8d99ae"}}
+                title = {"text": "Items Sold", "font": {"size": 16, "color": "#8d99ae"}}
             ))
             fig.update_layout(height=200, **layout_theme)
 
@@ -129,7 +129,7 @@ def generate_plotly_chart(analytics_id, dataset):
                 mode = "number",
                 value = uniq,
                 number = {'valueformat': ',', 'font': {'size': 48, 'color': '#76b7b2'}},
-                title = {"text": "Уникальные товары", "font": {"size": 16, "color": "#8d99ae"}}
+                title = {"text": "Unique Products", "font": {"size": 16, "color": "#8d99ae"}}
             ))
             fig.update_layout(height=200, **layout_theme)
 
@@ -138,7 +138,7 @@ def generate_plotly_chart(analytics_id, dataset):
             gp = df.groupby('goods_category')['total'].sum().reset_index().sort_values('total', ascending=False)
             fig = px.bar(
                 gp, x='goods_category', y='total',
-                labels={'goods_category': get_label('goods_category', 'Категория'), 'total': 'Выручка (₽)'},
+                labels={'goods_category': get_label('goods_category', 'Category'), 'total': 'Revenue (USD)'},
                 color_discrete_sequence=['#4e79a7']
             )
             fig.update_layout(**layout_theme)
@@ -148,7 +148,7 @@ def generate_plotly_chart(analytics_id, dataset):
             gp = df.groupby('goods_name')['total'].sum().reset_index().sort_values('total', ascending=False).head(10)
             fig = px.bar(
                 gp, y='goods_name', x='total', orientation='h',
-                labels={'goods_name': get_label('goods_name', 'Товар'), 'total': 'Выручка (₽)'},
+                labels={'goods_name': get_label('goods_name', 'Product'), 'total': 'Revenue (USD)'},
                 color_discrete_sequence=['#15388c']
             )
             fig.update_layout(**layout_theme)
@@ -159,7 +159,7 @@ def generate_plotly_chart(analytics_id, dataset):
             gp = df.groupby('goods_name')['quantity'].sum().reset_index().sort_values('quantity', ascending=False).head(10)
             fig = px.bar(
                 gp, y='goods_name', x='quantity', orientation='h',
-                labels={'goods_name': get_label('goods_name', 'Товар'), 'quantity': 'Количество'},
+                labels={'goods_name': get_label('goods_name', 'Product'), 'quantity': 'Quantity'},
                 color_discrete_sequence=['#59a14f']
             )
             fig.update_layout(**layout_theme)
@@ -170,7 +170,7 @@ def generate_plotly_chart(analytics_id, dataset):
             gp = df.groupby('goods_category')['total'].sum().reset_index()
             fig = px.pie(
                 gp, names='goods_category', values='total',
-                labels={'goods_category': get_label('goods_category', 'Категория'), 'total': 'Выручка (₽)'},
+                labels={'goods_category': get_label('goods_category', 'Category'), 'total': 'Revenue (USD)'},
                 color_discrete_sequence=px.colors.qualitative.Pastel
             )
             fig.update_layout(**layout_theme)
@@ -179,7 +179,7 @@ def generate_plotly_chart(analytics_id, dataset):
         elif analytics_id == 'price_distribution':
             fig = px.histogram(
                 df, x='price',
-                labels={'price': get_label('price', 'Цена')},
+                labels={'price': get_label('price', 'Price')},
                 color_discrete_sequence=['#76b7b2']
             )
             fig.update_layout(**layout_theme)
@@ -189,7 +189,7 @@ def generate_plotly_chart(analytics_id, dataset):
             gp = df.groupby('date')['total'].sum().reset_index()
             fig = px.line(
                 gp, x='date', y='total',
-                labels={'date': get_label('date', 'Дата'), 'total': 'Выручка (₽)'},
+                labels={'date': get_label('date', 'Date'), 'total': 'Revenue (USD)'},
                 color_discrete_sequence=['#15388c']
             )
             fig.update_traces(mode='lines+markers', marker=dict(size=4))
@@ -202,7 +202,7 @@ def generate_plotly_chart(analytics_id, dataset):
             gp = gp.reset_index(name='orders_count')
             fig = px.line(
                 gp, x='date', y='orders_count',
-                labels={'date': get_label('date', 'Дата'), 'orders_count': 'Заказы'},
+                labels={'date': get_label('date', 'Date'), 'orders_count': 'Orders'},
                 color_discrete_sequence=['#59a14f']
             )
             fig.update_layout(**layout_theme)
@@ -213,7 +213,7 @@ def generate_plotly_chart(analytics_id, dataset):
             gp = df.groupby('month')['total'].sum().reset_index()
             fig = px.bar(
                 gp, x='month', y='total',
-                labels={'month': 'Месяц', 'total': 'Выручка (₽)'},
+                labels={'month': 'Month', 'total': 'Revenue (USD)'},
                 color_discrete_sequence=['#f28e2b']
             )
             fig.update_layout(**layout_theme)
@@ -221,22 +221,21 @@ def generate_plotly_chart(analytics_id, dataset):
         # 28. weekday_analysis
         elif analytics_id == 'weekday_analysis':
             df['weekday'] = df['date'].dt.day_name()
-            # Для сортировки дней
             days_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-            days_ru = {'Monday': 'Пн', 'Tuesday': 'Вт', 'Wednesday': 'Ср', 'Thursday': 'Чт', 'Friday': 'Пт', 'Saturday': 'Сб', 'Sunday': 'Вс'}
+            days_en = {'Monday': 'Mon', 'Tuesday': 'Tue', 'Wednesday': 'Wed', 'Thursday': 'Thu', 'Friday': 'Fri', 'Saturday': 'Sat', 'Sunday': 'Sun'}
             
             gp = df.groupby('weekday')['total'].sum().reindex(days_order).reset_index()
-            gp['weekday_ru'] = gp['weekday'].map(days_ru)
+            gp['weekday_en'] = gp['weekday'].map(days_en)
             fig = px.bar(
-                gp, x='weekday_ru', y='total',
-                labels={'weekday_ru': 'День недели', 'total': 'Выручка (₽)'},
+                gp, x='weekday_en', y='total',
+                labels={'weekday_en': 'Day of Week', 'total': 'Revenue (USD)'},
                 color_discrete_sequence=['#e15759']
             )
             fig.update_layout(**layout_theme)
 
         # 43. price_anomalies
         elif analytics_id == 'price_anomalies':
-            # Считаем Z-score
+            # Z-score
             mean = df['price'].mean()
             std = df['price'].std()
             if std > 0:
@@ -247,40 +246,40 @@ def generate_plotly_chart(analytics_id, dataset):
                 
             if anomalies.empty:
                 fig = go.Figure()
-                fig.add_annotation(text="Аномальных цен не обнаружено", showarrow=False, font=dict(size=14))
+                fig.add_annotation(text="No price anomalies found", showarrow=False, font=dict(size=14))
             else:
                 fig = px.scatter(
                     anomalies, x='goods_name', y='price', size='quantity', color='price',
-                    labels={'goods_name': get_label('goods_name', 'Товар'), 'price': get_label('price', 'Цена')},
-                    title="Выявленные аномалии цен (>2 стандартных отклонений)"
+                    labels={'goods_name': get_label('goods_name', 'Product'), 'price': get_label('price', 'Price')},
+                    title="Detected Price Anomalies (>2 std deviations)"
                 )
             fig.update_layout(**layout_theme)
 
-        # 61. revenue_regression (Регрессия / Прогноз)
+        # 61. revenue_regression (Regression / Forecast)
 
 
-        # 71. abc_analysis (ABC-анализ товаров)
+        # 71. abc_analysis (ABC analysis)
         elif analytics_id == 'abc_analysis':
             gp = df.groupby('goods_name')['total'].sum().reset_index().sort_values('total', ascending=False)
             gp['share'] = gp['total'] / gp['total'].sum()
             gp['cum_share'] = gp['share'].cumsum()
             
             def get_abc(cum_share):
-                if cum_share <= 0.8: return 'A (80% выручки)'
-                elif cum_share <= 0.95: return 'B (15% выручки)'
-                return 'C (5% выручки)'
+                if cum_share <= 0.8: return 'A (80% revenue)'
+                elif cum_share <= 0.95: return 'B (15% revenue)'
+                return 'C (5% revenue)'
                 
             gp['Group'] = gp['cum_share'].apply(get_abc)
             
             fig = px.bar(
                 gp, x='goods_name', y='total', color='Group',
-                labels={'goods_name': get_label('goods_name', 'Товар'), 'total': 'Выручка (₽)', 'Group': 'Группа ABC'},
-                color_discrete_map={'A (80% выручки)': '#e15759', 'B (15% выручки)': '#f28e2b', 'C (5% выручки)': '#76b7b2'}
+                labels={'goods_name': get_label('goods_name', 'Product'), 'total': 'Revenue (USD)', 'Group': 'ABC Group'},
+                color_discrete_map={'A (80% revenue)': '#e15759', 'B (15% revenue)': '#f28e2b', 'C (5% revenue)': '#76b7b2'}
             )
             fig.update_layout(**layout_theme)
             fig.update_xaxes(showticklabels=False)
 
-        # 81. product_table (Детальная таблица товаров)
+        # 81. product_table (Detailed product table)
         elif analytics_id == 'product_table':
             agg_dict = {'total': 'sum'}
             if 'quantity' in df.columns: agg_dict['quantity'] = 'sum'
@@ -289,14 +288,14 @@ def generate_plotly_chart(analytics_id, dataset):
             gp = df.groupby('goods_name').agg(agg_dict).reset_index()
             gp = gp.sort_values('total', ascending=False).head(15)
             
-            header_vals = [get_label('goods_name', 'Товар'), 'Выручка (₽)']
+            header_vals = [get_label('goods_name', 'Product'), 'Revenue (USD)']
             cell_vals = [gp.goods_name, gp.total.round(2)]
             
             if 'quantity' in df.columns:
-                header_vals.append('Количество')
+                header_vals.append('Quantity')
                 cell_vals.append(gp.quantity)
             if 'price' in df.columns:
-                header_vals.append('Средняя цена')
+                header_vals.append('Average Price')
                 cell_vals.append(gp.price.round(2))
             
             fig = go.Figure(data=[go.Table(
@@ -318,12 +317,12 @@ def generate_plotly_chart(analytics_id, dataset):
                 fig = px.scatter(
                     rfm, x='Recency', y='Frequency', size='Monetary', color='Monetary',
                     hover_name='customer',
-                    labels={'Recency': 'Дней с последней покупки', 'Frequency': 'Частота покупок', 'Monetary': 'Выручка (₽)'},
-                    title="RFM Анализ клиентов"
+                    labels={'Recency': 'Days since last purchase', 'Frequency': 'Purchase Frequency', 'Monetary': 'Revenue (USD)'},
+                    title="RFM Customer Analysis"
                 )
             else:
                 fig = go.Figure()
-                fig.add_annotation(text="Недостаточно данных для RFM-анализа", showarrow=False)
+                fig.add_annotation(text="Insufficient data for RFM analysis", showarrow=False)
             fig.update_layout(**layout_theme)
 
         # 83. Customer Segments
@@ -331,23 +330,23 @@ def generate_plotly_chart(analytics_id, dataset):
             if 'customer' in df.columns and 'total' in df.columns:
                 gp = df.groupby('customer')['total'].sum().reset_index()
                 try:
-                    gp['segment'] = pd.qcut(gp['total'], q=3, labels=['Bronze (Нижние 33%)', 'Silver (Средние 33%)', 'Gold (Топ 33%)'])
+                    gp['segment'] = pd.qcut(gp['total'], q=3, labels=['Bronze (Bottom 33%)', 'Silver (Middle 33%)', 'Gold (Top 33%)'])
                 except:
-                    gp['segment'] = 'Обычные'
+                    gp['segment'] = 'Regular'
                 seg = gp.groupby('segment')['total'].sum().reset_index()
                 fig = px.pie(
                     seg, names='segment', values='total', hole=0.4, color='segment',
                     color_discrete_map={
-                        'Bronze (Нижние 33%)': '#CD7F32', 
-                        'Silver (Средние 33%)': '#C0C0C0', 
-                        'Gold (Топ 33%)': '#FFD700',
-                        'Обычные': '#8d99ae'
+                        'Bronze (Bottom 33%)': '#CD7F32', 
+                        'Silver (Middle 33%)': '#C0C0C0', 
+                        'Gold (Top 33%)': '#FFD700',
+                        'Regular': '#8d99ae'
                     }
                 )
-                fig.update_layout(title="Сегментация клиентов по выручке", **layout_theme)
+                fig.update_layout(title="Customer Segmentation by Revenue", **layout_theme)
             else:
                 fig = go.Figure()
-                fig.add_annotation(text="Недостаточно данных для Сегментации", showarrow=False)
+                fig.add_annotation(text="Insufficient data for Segmentation", showarrow=False)
                 fig.update_layout(**layout_theme)
 
         # 84. Revenue Drop Alert
@@ -359,13 +358,13 @@ def generate_plotly_chart(analytics_id, dataset):
                 gp['color'] = np.where(gp['drop'] < 0, '#e15759', '#59a14f')
                 fig = px.bar(
                     gp, x='date', y='drop', 
-                    title="Изменения выручки (рост и падение)",
-                    labels={'date': 'Дата', 'drop': 'Изменение (₽)'}
+                    title="Revenue Changes (Growth and Drop)",
+                    labels={'date': 'Date', 'drop': 'Change (USD)'}
                 )
                 fig.update_traces(marker_color=gp['color'])
             else:
                 fig = go.Figure()
-                fig.add_annotation(text="Недостаточно данных для отчета о падениях", showarrow=False)
+                fig.add_annotation(text="Insufficient data for drop alert", showarrow=False)
             fig.update_layout(**layout_theme)
 
         # 102. pareto_analysis
@@ -373,21 +372,21 @@ def generate_plotly_chart(analytics_id, dataset):
             if 'goods_name' in df.columns and 'total' in df.columns:
                 gp = df.groupby('goods_name')['total'].sum().reset_index().sort_values('total', ascending=False)
                 gp['cum_pct'] = gp['total'].cumsum() / gp['total'].sum() * 100
-                gp = gp.head(30) # Берем топ-30 для читаемости
+                gp = gp.head(30) # Top-30 for readability
                 
                 fig = make_subplots(specs=[[{"secondary_y": True}]])
-                fig.add_trace(go.Bar(x=gp['goods_name'], y=gp['total'], name='Выручка (₽)', marker_color='#4e79a7'), secondary_y=False)
-                fig.add_trace(go.Scatter(x=gp['goods_name'], y=gp['cum_pct'], name='Кумулятивный %', mode='lines+markers', marker_color='#e15759'), secondary_y=True)
+                fig.add_trace(go.Bar(x=gp['goods_name'], y=gp['total'], name='Revenue (USD)', marker_color='#4e79a7'), secondary_y=False)
+                fig.add_trace(go.Scatter(x=gp['goods_name'], y=gp['cum_pct'], name='Cumulative %', mode='lines+markers', marker_color='#e15759'), secondary_y=True)
                 
                 fig.update_layout(
-                    title="Парето-анализ товаров (Топ-30)",
+                    title="Pareto Analysis of Products (Top-30)",
                     **layout_theme
                 )
-                fig.update_yaxes(title_text="Кумулятивный процент", range=[0, 105], secondary_y=True)
+                fig.update_yaxes(title_text="Cumulative Percentage", range=[0, 105], secondary_y=True)
                 fig.update_xaxes(showticklabels=False, type='category')
             else:
                 fig = go.Figure()
-                fig.add_annotation(text="Недостаточно данных для графика Парето", showarrow=False)
+                fig.add_annotation(text="Insufficient data for Pareto chart", showarrow=False)
                 fig.update_layout(**layout_theme)
 
         # 60. yoy_comparison
@@ -400,15 +399,15 @@ def generate_plotly_chart(analytics_id, dataset):
                 
                 fig = px.bar(
                     gp, x='month_name', y='total', color='year', barmode='group',
-                    title="Сравнение выручки год к году (YoY)",
-                    labels={'month_name': 'Месяц', 'total': 'Выручка (₽)', 'year': 'Год'},
+                    title="Year-over-Year (YoY) Revenue Comparison",
+                    labels={'month_name': 'Month', 'total': 'Revenue (USD)', 'year': 'Year'},
                     color_discrete_sequence=px.colors.qualitative.Pastel
                 )
                 fig.update_layout(**layout_theme)
                 fig.update_xaxes(categoryorder='array', categoryarray=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])
             else:
                 fig = go.Figure()
-                fig.add_annotation(text="Недостаточно данных для сравнения год к году", showarrow=False)
+                fig.add_annotation(text="Insufficient data for YoY comparison", showarrow=False)
                 fig.update_layout(**layout_theme)
 
         # 107. customer_ltv
@@ -417,14 +416,14 @@ def generate_plotly_chart(analytics_id, dataset):
                 gp = df.groupby('customer')['total'].sum().reset_index()
                 fig = px.histogram(
                     gp, x='total', nbins=30,
-                    title="Распределение LTV (Пожизненной ценности) клиентов",
-                    labels={'total': 'Общая выручка от клиента (₽)'},
+                    title="Distribution of Customer LTV (Lifetime Value)",
+                    labels={'total': 'Total Customer Revenue (USD)'},
                     color_discrete_sequence=['#59a14f']
                 )
                 fig.update_layout(**layout_theme)
             else:
                 fig = go.Figure()
-                fig.add_annotation(text="Недостаточно данных для расчета LTV", showarrow=False)
+                fig.add_annotation(text="Insufficient data to calculate LTV", showarrow=False)
                 fig.update_layout(**layout_theme)
 
         # 71. customer_concentration
@@ -436,24 +435,24 @@ def generate_plotly_chart(analytics_id, dataset):
                 
                 fig = px.line(
                     gp, x='customer_pct', y='cum_pct', 
-                    title="Концентрация клиентов (Кривая Лоренца)",
-                    labels={'customer_pct': '% от всех клиентов', 'cum_pct': 'Кумулятивный % выручки'},
+                    title="Customer Concentration (Lorenz Curve)",
+                    labels={'customer_pct': '% of all customers', 'cum_pct': 'Cumulative % of revenue'},
                     color_discrete_sequence=['#15388c']
                 )
-                fig.add_trace(go.Scatter(x=[0, 100], y=[0, 100], mode='lines', name='Идеальное распределение', line=dict(color='gray', dash='dash')))
+                fig.add_trace(go.Scatter(x=[0, 100], y=[0, 100], mode='lines', name='Ideal distribution', line=dict(color='gray', dash='dash')))
                 fig.update_layout(**layout_theme)
             else:
                 fig = go.Figure()
-                fig.add_annotation(text="Недостаточно данных для оценки концентрации", showarrow=False)
+                fig.add_annotation(text="Insufficient data for concentration estimation", showarrow=False)
                 fig.update_layout(**layout_theme)
 
         else:
-            return get_error_chart(f"График '{analytics_id}' не реализован.")
+            return get_error_chart(f"Chart '{analytics_id}' is not implemented.")
 
         return json.dumps(fig, cls=PlotlyJSONEncoder)
 
     except Exception as e:
-        return get_error_chart(f"Ошибка построения графика: {str(e)}")
+        return get_error_chart(f"Chart generation error: {str(e)}")
 
 def get_error_chart(message):
     fig = go.Figure()

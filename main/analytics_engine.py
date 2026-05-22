@@ -1,6 +1,6 @@
 """
-Движок ранжирования визуализаций.
-Анализирует данные пользователя и определяет какие визуализации возможны/полезны.
+Visualization ranking engine.
+Analyzes user data and determines which visualizations are feasible/useful.
 """
 import pandas as pd
 from .models import Dataset, ColumnMapping, DashboardWidget
@@ -8,7 +8,7 @@ from .analytics_catalog import ANALYTICS_CATALOG, CATEGORIES, get_by_id
 
 
 def get_dataset_profile(dataset):
-    """Собирает профиль датасета: какие маппинги есть, сколько строк, типы данных."""
+    """Builds a dataset profile: available mappings, row count, data types."""
     mappings = dataset.column_mappings.exclude(standard_name='other')
     mapped_names = set(mappings.values_list('standard_name', flat=True))
     
@@ -33,33 +33,31 @@ IMPLEMENTED_ANALYTICS = {
 
 def score_analytics(analytics_item, profile, existing_items):
     """
-    Считает score для одной визуализации на основе принципов рекомендательных систем Visual Analytics.
-    Возвращает dict с feasibility и итоговым score.
+    Calculates score for a single visualization based on Visual Analytics recommendation principles.
+    Returns dict with feasibility and final score.
     """
     if analytics_item['id'] not in IMPLEMENTED_ANALYTICS:
-        return {'feasible': False, 'score': 0, 'reason': 'В разработке (Скоро)', 'missing_mappings': []}
+        return {'feasible': False, 'score': 0, 'reason': 'In development (Coming soon)', 'missing_mappings': []}
         
     required = set(analytics_item['required_mappings'])
     available = profile['mapped_names']
     
-    # Жесткие фильтры (Hard Constraints)
+    # Hard Constraints
     if required and not required.issubset(available):
         missing = required - available
-        return {'feasible': False, 'score': 0, 'reason': f"Нет маппингов: {', '.join(missing)}", 'missing_mappings': list(missing)}
+        return {'feasible': False, 'score': 0, 'reason': f"Missing mappings: {', '.join(missing)}", 'missing_mappings': list(missing)}
     
     if profile['rows_count'] < analytics_item['min_rows']:
-        return {'feasible': False, 'score': 0, 'reason': f"Нужно минимум {analytics_item['min_rows']} строк", 'missing_mappings': []}
+        return {'feasible': False, 'score': 0, 'reason': f"Requires at least {analytics_item['min_rows']} rows", 'missing_mappings': []}
     
-    # Мягкие эвристики (Soft Scoring)
+    # Soft Scoring heuristics
     score = analytics_item['usefulness']
     
-    # 1. Комплементарность (Penalty for Redundancy)
-    # Штрафуем графики из категорий, которыми уже перенасыщен дашборд.
+    # 1. Penalty for Redundancy
     same_category_count = sum(1 for item in existing_items if item['category'] == analytics_item['category'])
     score -= (same_category_count * 1.5)
     
-    # 2. Новизна измерений (Dimension Novelty)
-    # Поощряем использование еще не задействованных колонок данных.
+    # 2. Dimension Novelty
     used_columns = set()
     for item in existing_items:
         used_columns.update(item['required_mappings'])
@@ -67,27 +65,26 @@ def score_analytics(analytics_item, profile, existing_items):
     novel_columns = required - used_columns
     score += (len(novel_columns) * 2.0)
     
-    # 3. Фазовый сдвиг / Эволюция (Complexity Progression)
-    # На старте нужны базовые метрики. При заполненном дашборде нужны глубокие инсайты.
+    # 3. Complexity Progression
     total_widgets = len(existing_items)
     if total_widgets < 3 and analytics_item['category'] == 'overview':
-        score += 20.0  # Огромный фокус на базу (строго заставляет вывести KPI сначала)
+        score += 20.0  # Huge focus on basic KPIs first
     elif total_widgets >= 3 and analytics_item['category'] in ['opportunities', 'risks']:
-        score += 5.0  # Фокус на поиск точек роста и проблем
+        score += 5.0  # Focus on finding growth points and issues
 
     return {
         'feasible': True,
         'score': max(round(score, 2), 0.1),
-        'reason': 'Доступно',
+        'reason': 'Available',
         'missing_mappings': [],
     }
 
 
 def get_ranked_analytics(user, dataset_id=None):
     """
-    Возвращает проранжированный список визуализаций для пользователя.
-    Если dataset_id указан — анализирует конкретный датасет.
-    Иначе — берёт первый готовый датасет.
+    Returns ranked list of visualizations for the user.
+    If dataset_id is given — analyzes the specific dataset.
+    Otherwise — takes the first ready dataset.
     """
     if dataset_id:
         try:
@@ -104,7 +101,7 @@ def get_ranked_analytics(user, dataset_id=None):
     existing_widgets = DashboardWidget.objects.filter(user=user, dataset=dataset)
     existing_map = {w.analytics_id: w.id for w in existing_widgets}
     
-    # Собираем полные объекты из каталога для алгоритма
+    # Gather full objects from catalog for the algorithm
     existing_items = [item for item in ANALYTICS_CATALOG if item['id'] in existing_map]
     
     results = []
@@ -117,21 +114,21 @@ def get_ranked_analytics(user, dataset_id=None):
             'widget_id': existing_map.get(item['id']),
         })
     
-    # Сортируем: сначала доступные (по score desc), потом недоступные
+    # Sort: feasible first (by score desc), then non-feasible
     results.sort(key=lambda x: (x['feasible'], x['score']), reverse=True)
     
     return results, dataset
 
 
 def get_top_recommendations(user, dataset_id=None, limit=6):
-    """Возвращает топ-N рекомендаций (только feasible и не добавленные)."""
+    """Returns top N recommendations (only feasible and not added)."""
     results, dataset = get_ranked_analytics(user, dataset_id)
     recommendations = [r for r in results if r['feasible'] and not r['is_added']]
     return recommendations[:limit], dataset
 
 
 def get_by_category_ranked(user, dataset_id=None):
-    """Группирует визуализации по категориям с ранжированием внутри каждой."""
+    """Groups visualizations by category with ranking inside each."""
     results, dataset = get_ranked_analytics(user, dataset_id)
     
     categorized = {}
