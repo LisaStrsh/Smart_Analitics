@@ -1,37 +1,381 @@
 {% extends 'main/layout.html' %}
 {% block title %}Settings{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* ===== EMPLOYEES ===== */
+    .employees-section {
+        margin-top: 30px;
+    }
+
+    .employees-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+    }
+
+    .employees-header h2 {
+        font-size: 20px;
+        color: #15388c;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .employee-add-btn {
+        background: linear-gradient(135deg, #15388c 0%, #3066be 100%);
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s;
+        box-shadow: 0 4px 12px rgba(21, 56, 140, 0.2);
+    }
+
+    .employee-add-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(21, 56, 140, 0.3);
+    }
+
+    /* Modal */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-overlay.active {
+        display: flex;
+    }
+
+    .modal-box {
+        background: #fff;
+        border-radius: 16px;
+        padding: 32px;
+        width: 90%;
+        max-width: 480px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+        animation: modalSlideIn 0.3s ease;
+    }
+
+    @keyframes modalSlideIn {
+        from { transform: translateY(30px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    .modal-box h3 {
+        font-size: 20px;
+        color: #15388c;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .modal-box .field-group {
+        margin-bottom: 16px;
+    }
+
+    .modal-box .field-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: #555;
+        margin-bottom: 6px;
+    }
+
+    .modal-box .field-group input,
+    .modal-box .field-group select {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        background: #f8fafe;
+        transition: border-color 0.2s;
+    }
+
+    .modal-box .field-group input:focus,
+    .modal-box .field-group select:focus {
+        outline: none;
+        border-color: #15388c;
+        box-shadow: 0 0 0 3px rgba(21, 56, 140, 0.1);
+    }
+
+    .modal-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+    }
+
+    .modal-cancel {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background: #fff;
+        color: #555;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .modal-cancel:hover {
+        background: #f0f0f0;
+    }
+
+    .modal-submit {
+        flex: 1;
+        padding: 10px;
+        border: none;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #15388c, #3066be);
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .modal-submit:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(21, 56, 140, 0.3);
+    }
+
+    /* Employee List */
+    .employee-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .employee-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 18px 22px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        transition: all 0.2s;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    }
+
+    .employee-card:hover {
+        border-color: #cbd5e0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .employee-info {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .employee-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 16px;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    .employee-details {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .employee-name {
+        font-weight: 700;
+        font-size: 15px;
+        color: #1a202c;
+        margin-bottom: 2px;
+    }
+
+    .employee-meta {
+        font-size: 12px;
+        color: #718096;
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .employee-meta span {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .employee-credentials {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+
+    .credential-box {
+        background: #f7fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-family: 'Consolas', 'Courier New', monospace;
+        font-size: 13px;
+        color: #2d3748;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+    }
+
+    .credential-box:hover {
+        background: #edf2f7;
+        border-color: #cbd5e0;
+    }
+
+    .credential-box .cred-label {
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 11px;
+        color: #a0aec0;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .credential-box .copy-icon {
+        color: #a0aec0;
+        font-size: 12px;
+        transition: color 0.2s;
+    }
+
+    .credential-box:hover .copy-icon {
+        color: #15388c;
+    }
+
+    .credential-box .copy-tooltip {
+        display: none;
+        position: absolute;
+        top: -30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #1a202c;
+        color: #fff;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 11px;
+        white-space: nowrap;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    .credential-box.copied .copy-tooltip {
+        display: block;
+        animation: fadeOut 1.5s forwards;
+    }
+
+    @keyframes fadeOut {
+        0%, 70% { opacity: 1; }
+        100% { opacity: 0; }
+    }
+
+    .employee-delete-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        border: 1px solid #fed7d7;
+        background: #fff5f5;
+        color: #e53e3e;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+
+    .employee-delete-btn:hover {
+        background: #e53e3e;
+        color: #fff;
+        border-color: #e53e3e;
+    }
+
+    .employees-empty {
+        text-align: center;
+        padding: 40px 20px;
+        background: #fff;
+        border: 1px dashed #cbd5e0;
+        border-radius: 12px;
+        color: #718096;
+    }
+
+    .employees-empty i {
+        font-size: 36px;
+        color: #cbd5e0;
+        margin-bottom: 10px;
+    }
+
+    .employees-empty h3 {
+        font-size: 16px;
+        color: #4a5568;
+        margin-bottom: 6px;
+    }
+
+    .employees-empty p {
+        font-size: 13px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <h1>Settings</h1>
-    <p>Manage your profile and company information</p>
+    <p>Manage your profile, company, and employees</p>
 </div>
 
 {% if success %}
 <div class="alert alert-success">
-    <i class="fa-solid fa-check"></i> Settings saved successfully!
+    <i class="fa-solid fa-check"></i> Settings saved!
 </div>
 {% endif %}
 
 <div class="settings-grid">
     <div class="settings-card">
-        <h2><i class="fa-solid fa-user"></i> Account Info</h2>
+        <h2><i class="fa-solid fa-user"></i> Account</h2>
         <div class="info-row">
             <span class="info-label">Username:</span>
             <span class="info-value">{{ request.user.username }}</span>
         </div>
         <div class="info-row">
             <span class="info-label">Email:</span>
-            <span class="info-value">{{ request.user.email|default:"Not set" }}</span>
+            <span class="info-value">{{ request.user.email|default:"Not specified" }}</span>
         </div>
         <div class="info-row">
-            <span class="info-label">Joined:</span>
+            <span class="info-label">Registration Date:</span>
             <span class="info-value">{{ request.user.date_joined|date:"d.m.Y" }}</span>
         </div>
     </div>
 
     <div class="settings-card">
-        <h2><i class="fa-solid fa-building"></i> Company & Profile</h2>
+        <h2><i class="fa-solid fa-building"></i> Company and Profile</h2>
         <form method="post" enctype="multipart/form-data" class="settings-form">
             {% csrf_token %}
             
@@ -43,7 +387,7 @@
             </div>
 
             <div class="field-group">
-                <label for="avatar">Profile Image</label>
+                <label for="avatar">Profile Picture</label>
                 {% if profile.avatar %}
                 <div class="current-avatar">
                     <img src="{{ profile.avatar.url }}" alt="avatar" class="avatar-preview">
@@ -53,9 +397,126 @@
             </div>
 
             <button type="submit" class="btn-primary">
-                <i class="fa-solid fa-floppy-disk"></i> Save Changes
+                <i class="fa-solid fa-floppy-disk"></i> Save
             </button>
         </form>
     </div>
 </div>
+
+<!-- ===== EMPLOYEES SECTION ===== -->
+<div class="employees-section">
+    <div class="employees-header">
+        <h2><i class="fa-solid fa-users"></i> Employees</h2>
+        {% if datasets %}
+        <button class="employee-add-btn" onclick="openAddModal()">
+            <i class="fa-solid fa-user-plus"></i> Add Employee
+        </button>
+        {% endif %}
+    </div>
+
+    {% if employees %}
+    <div class="employee-list">
+        {% for emp in employees %}
+        <div class="employee-card">
+            <div class="employee-info">
+                <div class="employee-avatar">
+                    {{ emp.display_name|first|upper }}
+                </div>
+                <div class="employee-details">
+                    <div class="employee-name">{{ emp.display_name }}</div>
+                    <div class="employee-meta">
+                        <span><i class="fa-solid fa-table"></i> {{ emp.dataset.name }}</span>
+                        <span><i class="fa-solid fa-calendar"></i> {{ emp.created_at|date:"d.m.Y" }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="employee-credentials">
+                <div class="credential-box" onclick="copyCredential(this, '{{ emp.user.username }}')">
+                    <span class="cred-label">Login</span>
+                    {{ emp.user.username }}
+                    <i class="fa-regular fa-copy copy-icon"></i>
+                    <span class="copy-tooltip">Copied!</span>
+                </div>
+                <div class="credential-box" onclick="copyCredential(this, '{{ emp.generated_password }}')">
+                    <span class="cred-label">Password</span>
+                    {{ emp.generated_password }}
+                    <i class="fa-regular fa-copy copy-icon"></i>
+                    <span class="copy-tooltip">Copied!</span>
+                </div>
+            </div>
+            <form method="post" action="{% url 'delete_employee' emp.id %}" style="margin:0;">
+                {% csrf_token %}
+                <button type="submit" class="employee-delete-btn" title="Delete employee"
+                        onclick="return confirm('Delete employee {{ emp.display_name }}?');">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="employees-empty">
+        <i class="fa-solid fa-user-group"></i>
+        <h3>No employees</h3>
+        <p>Add an employee so they can enter data into your table through an individual form.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Add Employee Modal -->
+<div class="modal-overlay" id="addEmployeeModal">
+    <div class="modal-box">
+        <h3><i class="fa-solid fa-user-plus"></i> New Employee</h3>
+        <form method="post" action="{% url 'create_employee' %}">
+            {% csrf_token %}
+            <div class="field-group">
+                <label for="display_name">Employee Name</label>
+                <input type="text" name="display_name" id="display_name" 
+                       placeholder="e.g. John Manager" required>
+            </div>
+            <div class="field-group">
+                <label for="dataset_id">Assign to Table</label>
+                <select name="dataset_id" id="dataset_id" required>
+                    {% for ds in datasets %}
+                    <option value="{{ ds.id }}">{{ ds.name }} ({{ ds.rows_count }} rows, {{ ds.columns_count }} columns)</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <p style="font-size: 13px; color: #718096; margin-top: 8px;">
+                <i class="fa-solid fa-circle-info" style="color: #15388c;"></i>
+                Login and password will be generated automatically. The employee will only have access to the row addition form for the selected table.
+            </p>
+            <div class="modal-actions">
+                <button type="button" class="modal-cancel" onclick="closeAddModal()">Cancel</button>
+                <button type="submit" class="modal-submit">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Create
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openAddModal() {
+    document.getElementById('addEmployeeModal').classList.add('active');
+}
+function closeAddModal() {
+    document.getElementById('addEmployeeModal').classList.remove('active');
+}
+
+// Close modal on overlay click
+document.getElementById('addEmployeeModal').addEventListener('click', function(e) {
+    if (e.target === this) closeAddModal();
+});
+
+function copyCredential(el, text) {
+    navigator.clipboard.writeText(text).then(() => {
+        el.classList.add('copied');
+        setTimeout(() => el.classList.remove('copied'), 1500);
+    });
+}
+</script>
 {% endblock %}

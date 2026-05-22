@@ -1,5 +1,5 @@
 {% extends 'main/layout.html' %}
-{% block title %}Каталог аналитики — {{ dataset.name }}{% endblock %}
+{% block title %}Analytics Catalog — {{ dataset.name }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -119,7 +119,7 @@
         border-color: #cbd5e0;
     }
 
-    /* Имитация картинки-превью */
+    /* Preview mock */
     .widget-preview-box {
         height: 140px;
         background: #f7fafc;
@@ -141,7 +141,7 @@
         transform: scale(1.15) rotate(-5deg);
     }
 
-    /* Миниатюрная имитация графика внутри превью */
+    /* Mini chart mock inside preview */
     .mock-chart {
         position: absolute;
         bottom: 15px;
@@ -285,17 +285,17 @@
 {% block content %}
 <div class="catalog-header">
     <div class="catalog-title">
-        <h1>Каталог аналитики</h1>
-        <p>Набор готовых аналитических блоков под ваши бизнес-метрики. Проранжировано по ценности для <strong>{{
+        <h1>Analytics Catalog</h1>
+        <p>A set of ready-made analytical blocks for your business metrics. Ranked by value for <strong>{{
                 dataset.name }}</strong></p>
     </div>
     <a href="{% url 'home' %}?dataset_id={{ dataset.id }}" class="btn-primary"
         style="background: transparent; border: 1px solid #15388c; color: #15388c;">
-        <i class="fa-solid fa-house"></i> На дашборд
+        <i class="fa-solid fa-house"></i> To Dashboard
     </a>
 </div>
 
-<!-- Категории-вкладки -->
+<!-- Category tabs -->
 <div class="category-tabs">
     {% for cat_id, cat in categorized_analytics.items %}
     <a href="#cat-{{ cat_id }}" class="category-tab">
@@ -309,38 +309,38 @@
     {% endfor %}
 </div>
 
-<!-- Блоки категорий -->
+<!-- Category sections -->
 {% for cat_id, cat in categorized_analytics.items %}
 <div class="category-section" id="cat-{{ cat_id }}">
     <div class="category-section-title">
         <i class="fa-solid {{ cat.info.icon }}" style="color: {{ cat.info.color }}"></i>
         {{ cat.info.name }}
-        <span>Доступно: {{ cat.feasible_count }} из {{ cat.total_count }}</span>
+        <span>Available: {{ cat.feasible_count }} of {{ cat.total_count }}</span>
     </div>
 
     <div class="widgets-grid">
         {% for widget in cat.items %}
         <div class="widget-card">
-            <!-- Превью -->
+            <!-- Preview -->
             <div class="widget-preview-box">
                 <i class="fa-solid {{ widget.icon }} preview-main-icon"
                     style="color: {{ cat.info.color }}; opacity: 0.2;"></i>
 
-                <!-- Декоративные мини-графики -->
+                <!-- Decorative mini-charts -->
                 <div class="mock-chart">
                     {% if widget.category == 'trends' %}
-                    <!-- Имитация линии тренда -->
+                    <!-- Trend line mock -->
                     <svg viewBox="0 0 100 40"
                         style="width: 100%; height: 100%; stroke: {{ cat.info.color }}; fill: none; stroke-width: 2;">
                         <path d="M 0 35 Q 25 15 50 25 T 100 5"></path>
                     </svg>
                     {% elif widget.category == 'overview' %}
-                    <!-- Имитация пирога -->
+                    <!-- Pie mock -->
                     <div
                         style="width: 40px; height: 40px; border-radius: 50%; border: 6px solid #e2e8f0; border-top-color: {{ cat.info.color }}; margin: 0 auto;">
                     </div>
                     {% else %}
-                    <!-- Имитация столбцов -->
+                    <!-- Bar mock -->
                     <div class="mock-bar" style="height: 30%;"></div>
                     <div class="mock-bar" style="height: 50%;"></div>
                     <div class="mock-bar" style="height: 40%;"></div>
@@ -350,25 +350,24 @@
                 </div>
 
                 {% if widget.feasible %}
-                <span class="widget-badge badge-feasible">Доступно</span>
+                <span class="widget-badge badge-feasible">Available</span>
                 {% else %}
-                <span class="widget-badge badge-locked">Недоступно</span>
+                <span class="widget-badge badge-locked">Unavailable</span>
                 {% endif %}
             </div>
 
-            <!-- Контент -->
+            <!-- Content -->
             <div class="widget-info">
                 <div class="widget-name">
                     <i class="fa-solid {{ widget.icon }}" style="color: {{ cat.info.color }}"></i>
                     {{ widget.name }}
                 </div>
 
-                <!-- Короткий текст (как просил пользователь) -->
                 <div class="widget-desc">{{ widget.short_desc }}</div>
 
                 <div class="widget-footer">
                     {% if widget.feasible %}
-                    <div class="widget-score" title="Оценка полезности на основе полноты ваших данных">
+                    <div class="widget-score" title="Usefulness score based on your data completeness">
                         <i class="fa-solid fa-star"></i>
                         {{ widget.score }}
                     </div>
@@ -376,7 +375,7 @@
                     {% if widget.is_added %}
                     <a href="{% url 'remove_widget' widget.widget_id %}?next={{ request.get_full_path|urlencode }}"
                         class="widget-action-btn btn-remove">
-                        <i class="fa-solid fa-check"></i> Добавлено
+                        <i class="fa-solid fa-check"></i> Added
                     </a>
                     {% else %}
                     <form method="post" action="{% url 'add_widget' %}">
@@ -385,7 +384,7 @@
                         <input type="hidden" name="analytics_id" value="{{ widget.id }}">
                         <input type="hidden" name="next" value="{{ request.get_full_path }}">
                         <button type="submit" class="widget-action-btn btn-add">
-                            <i class="fa-solid fa-plus"></i> Выбрать блок
+                            <i class="fa-solid fa-plus"></i> Add Block
                         </button>
                     </form>
                     {% endif %}

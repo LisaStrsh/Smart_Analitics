@@ -19,10 +19,10 @@ body{
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding-top: 160px; /* вот этим двигаешь вниз */
+  padding-top: 160px; /* move down */
 }
 
-/* фоновые “пятна” как на референсе */
+/* background spots like reference */
 .bg-shapes::before,
 .bg-shapes::after{
   content: "";
@@ -45,7 +45,7 @@ body{
   background: rgba(0,0,0,0.18);
 }
 
-/* центральная карточка */
+/* central card */
 .card{
   width: min(560px, 92vw);
   text-align: center;
@@ -70,7 +70,7 @@ body{
   gap: 18px;
 }
 
-/* инпуты */
+/* inputs */
 .field{
   display: flex;
   align-items: center;
@@ -101,7 +101,7 @@ body{
   color: rgba(255,255,255,0.75);
 }
 
-/* кнопка */
+/* button */
 .submit{
   margin-top: 8px;
   padding: 16px 18px;
@@ -114,7 +114,7 @@ body{
   cursor: pointer;
 }
 
-/* круглые стрелки */
+/* circular arrows */
 .nav-btn{
   position: fixed;
   top: 50%;

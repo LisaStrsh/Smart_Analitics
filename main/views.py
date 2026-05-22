@@ -1,26 +1,45 @@
 import json
+import string
+import random
 import pandas as pd
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout as auth_logout
+from django.contrib.auth.models import User
 from django.http import JsonResponse
-from .models import UserProfile, Dataset, ColumnMapping, DashboardWidget
+from .models import UserProfile, Dataset, ColumnMapping, DashboardWidget, Employee
 from .analytics_catalog import get_by_id
 from .analytics_engine import get_ranked_analytics, get_top_recommendations, get_by_category_ranked
 from .chart_generator import generate_plotly_chart
 
 
+def _generate_credentials():
+    """Generate random username and password for an employee."""
+    prefix = 'emp_'
+    suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+    username = prefix + suffix
+    password = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+    return username, password
+
+
+def _is_employee(user):
+    """Check if the user is an employee."""
+    return hasattr(user, 'employee_profile')
+
+
 @login_required
 def main_f(request):
     """
-    Главная страница (автоматические дашборды).
-    Выводит сетку выбранных визуализаций и проранжированные рекомендации.
+    Main page (automatic dashboards).
+    If the user is an employee, redirect to the data entry form.
     """
+    if _is_employee(request.user):
+        return redirect('employee_form')
+
     profile, _ = UserProfile.objects.get_or_create(user=request.user)
     datasets = Dataset.objects.filter(user=request.user, status='ready')
     active_dataset = None
     
-    # Разрешаем выбрать активный датасет из выпадающего списка
     dataset_id = request.GET.get('dataset_id')
     if dataset_id:
         active_dataset = datasets.filter(id=dataset_id).first()
@@ -33,11 +52,8 @@ def main_f(request):
     
     if active_dataset:
         widgets = DashboardWidget.objects.filter(user=request.user, dataset=active_dataset).order_by('position')
-        
-        # Получаем рекомендации (топ-4 доступных и не добавленных)
         recommendations, _ = get_top_recommendations(request.user, active_dataset.id, limit=4)
         
-        # Обогащаем виджеты данными графиков Plotly и метаданными из каталога
         for w in widgets:
             w.chart_json = generate_plotly_chart(w.analytics_id, active_dataset)
             cat_item = get_by_id(w.analytics_id)
@@ -50,7 +66,6 @@ def main_f(request):
                 w.short_desc = ""
                 w.icon = "fa-chart-simple"
                 
-    # Все датасеты пользователя для селектора (даже в процессе обработки)
     all_datasets = Dataset.objects.filter(user=request.user)
     
     return render(request, 'main/main.html', {
@@ -65,10 +80,7 @@ def main_f(request):
 
 @login_required
 def catalog_f(request, dataset_id):
-    """
-    Каталог всех видов аналитики (100 штук), проранжированных
-    под конкретный датасет и разбитых по 5 категориям.
-    """
+    """Catalog of all analytics types."""
     dataset = get_object_or_404(Dataset, id=dataset_id, user=request.user)
     categorized_analytics, _ = get_by_category_ranked(request.user, dataset.id)
     
@@ -80,14 +92,13 @@ def catalog_f(request, dataset_id):
 
 @login_required
 def add_widget_f(request):
-    """Добавление визуализации на дашборд."""
+    """Add visualization to the dashboard."""
     if request.method == "POST":
         dataset_id = request.POST.get('dataset_id')
         analytics_id = request.POST.get('analytics_id')
         
         dataset = get_object_or_404(Dataset, id=dataset_id, user=request.user)
         
-        # Проверяем на дубликаты
         exists = DashboardWidget.objects.filter(
             user=request.user, dataset=dataset, analytics_id=analytics_id
         ).exists()
@@ -109,12 +120,11 @@ def add_widget_f(request):
 
 @login_required
 def remove_widget_f(request, widget_id):
-    """Удаление визуализации с дашборда."""
+    """Remove visualization from the dashboard."""
     widget = get_object_or_404(DashboardWidget, id=widget_id, user=request.user)
     dataset_id = widget.dataset.id
     widget.delete()
     
-    # Пересчитываем позиции
     widgets = DashboardWidget.objects.filter(user=request.user, dataset_id=dataset_id).order_by('position')
     for i, w in enumerate(widgets):
         w.position = i
@@ -126,7 +136,7 @@ def remove_widget_f(request, widget_id):
 
 @login_required
 def clear_dashboard_f(request, dataset_id):
-    """Удаление всех визуализаций с дашборда."""
+    """Remove all visualizations from the dashboard."""
     dataset = get_object_or_404(Dataset, id=dataset_id, user=request.user)
     DashboardWidget.objects.filter(user=request.user, dataset=dataset).delete()
     return redirect(f'/main/?dataset_id={dataset.id}')
@@ -134,7 +144,7 @@ def clear_dashboard_f(request, dataset_id):
 
 @login_required
 def reorder_widgets_f(request):
-    """Сортировка виджетов через Drag-and-Drop (AJAX)."""
+    """Sort widgets via Drag-and-Drop (AJAX)."""
     if request.method == "POST":
         try:
             data = json.loads(request.body)
@@ -152,27 +162,14 @@ def reorder_widgets_f(request):
 
 @login_required
 def data_f(request):
-    """
-    Страница данных — список загруженных файлов.
-    Отсюда можно загрузить новый файл или посмотреть существующие.
-    """
+    """Data page — list of uploaded files."""
     datasets = Dataset.objects.filter(user=request.user)
     return render(request, 'main/data.html', {'datasets': datasets})
 
 
 @login_required
 def upload_dataset_f(request):
-    """
-    Загрузка нового файла (Excel/CSV).
-    
-    Что происходит:
-    1. Пользователь выбирает файл и нажимает "Загрузить"
-    2. Django принимает файл через request.FILES
-    3. Мы сохраняем файл на диск (в папку media/datasets/)
-    4. Читаем файл через pandas чтобы узнать количество строк/колонок
-    5. Создаём ColumnMapping для каждой колонки — пока без маппинга (standard_name='other')
-    6. Пользователь потом сам назначит каждой колонке стандартное имя
-    """
+    """Upload a new file (Excel/CSV)."""
     if request.method == "POST":
         file = request.FILES.get('file')
         name = request.POST.get('name', '').strip()
@@ -181,9 +178,8 @@ def upload_dataset_f(request):
             return redirect('/main/data/')
 
         if not name:
-            name = file.name  # если имя не указали — берём имя файла
+            name = file.name
 
-        # Создаём запись в БД
         dataset = Dataset.objects.create(
             user=request.user,
             name=name,
@@ -193,25 +189,22 @@ def upload_dataset_f(request):
         )
 
         try:
-            # Читаем файл через pandas
             file_path = dataset.file.path
             if file.name.endswith('.csv'):
                 df = pd.read_csv(file_path)
             else:
                 df = pd.read_excel(file_path)
 
-            # Сохраняем метаданные
             dataset.rows_count = len(df)
             dataset.columns_count = len(df.columns)
             dataset.status = 'ready'
             dataset.save()
 
-            # Создаём маппинг для каждой колонки
             for col_name in df.columns:
                 ColumnMapping.objects.create(
                     dataset=dataset,
                     user_column_name=str(col_name),
-                    standard_name='other'  # по умолчанию — "прочее", потом пользователь сам укажет
+                    standard_name='other'
                 )
 
         except Exception as e:
@@ -225,26 +218,36 @@ def upload_dataset_f(request):
 
 @login_required
 def dataset_detail_f(request, dataset_id):
-    """
-    Просмотр конкретного датасета: таблица с данными + маппинг колонок.
-    
-    get_object_or_404 — если датасет не найден или принадлежит другому 
-    пользователю, Django покажет страницу "404 Not Found".
-    """
+    """View a specific dataset."""
     dataset = get_object_or_404(Dataset, id=dataset_id, user=request.user)
     mappings = dataset.column_mappings.all()
 
-    # Читаем первые 50 строк для предпросмотра
     preview_data = []
     columns = []
     try:
         file_path = dataset.file.path
         if dataset.original_filename.endswith('.csv'):
-            df = pd.read_csv(file_path, nrows=50)
+            df = pd.read_csv(file_path)
         else:
-            df = pd.read_excel(file_path, nrows=50)
+            df = pd.read_excel(file_path)
+            
+        # Sort by date if mapped date column exists
+        date_mapping = mappings.filter(standard_name='date').first()
+        if date_mapping and date_mapping.user_column_name in df.columns:
+            date_col = date_mapping.user_column_name
+            temp_date = pd.to_datetime(df[date_col], errors='coerce')
+            df['__temp_parsed_date__'] = temp_date
+            df = df.sort_values(by='__temp_parsed_date__', ascending=False, na_position='last')
+            df = df.drop(columns=['__temp_parsed_date__'])
+            
         columns = list(df.columns)
-        preview_data = df.fillna('').values.tolist()
+        
+        # Prepare preview data with original indices
+        for idx, row in df.head(50).iterrows():
+            preview_data.append({
+                'index': idx,
+                'cells': row.fillna('').tolist()
+            })
     except Exception:
         pass
 
@@ -259,10 +262,7 @@ def dataset_detail_f(request, dataset_id):
 
 @login_required
 def update_mapping_f(request, dataset_id):
-    """
-    Обновление маппинга колонок (AJAX-запрос).
-    Пользователь выбирает для каждой колонки стандартное имя из выпадающего списка.
-    """
+    """Update column mapping (AJAX request)."""
     if request.method == "POST":
         dataset = get_object_or_404(Dataset, id=dataset_id, user=request.user)
         data = json.loads(request.body)
@@ -283,20 +283,20 @@ def update_mapping_f(request, dataset_id):
 
 @login_required
 def delete_dataset_f(request, dataset_id):
-    """Удаление датасета."""
+    """Delete dataset."""
     if request.method == "POST":
         dataset = get_object_or_404(Dataset, id=dataset_id, user=request.user)
-        dataset.file.delete()  # удаляем файл с диска
-        dataset.delete()       # удаляем запись из БД
+        dataset.file.delete()
+        dataset.delete()
     return redirect('/main/data/')
 
 
 @login_required
 def settings_f(request):
-    """
-    Страница настроек профиля.
-    Пользователь может изменить название компании и загрузить аватарку.
-    """
+    """Profile settings page with employee management."""
+    if _is_employee(request.user):
+        return redirect('employee_form')
+
     profile, created = UserProfile.objects.get_or_create(user=request.user)
     success = False
 
@@ -310,23 +310,157 @@ def settings_f(request):
         profile.save()
         success = True
 
+    employees = Employee.objects.filter(owner=request.user).select_related('user', 'dataset')
+    datasets = Dataset.objects.filter(user=request.user, status='ready')
+
     return render(request, 'main/settings.html', {
         'profile': profile,
+        'success': success,
+        'employees': employees,
+        'datasets': datasets,
+    })
+
+
+@login_required
+def create_employee_f(request):
+    """Create a new employee with autogenerated credentials."""
+    if request.method == "POST":
+        dataset_id = request.POST.get('dataset_id')
+        display_name = request.POST.get('display_name', '').strip()
+
+        dataset = get_object_or_404(Dataset, id=dataset_id, user=request.user, status='ready')
+
+        username, password = _generate_credentials()
+
+        emp_user = User.objects.create_user(
+            username=username,
+            password=password
+        )
+
+        Employee.objects.create(
+            owner=request.user,
+            user=emp_user,
+            dataset=dataset,
+            display_name=display_name or username,
+            generated_password=password
+        )
+
+    return redirect('settings')
+
+
+@login_required
+def delete_employee_f(request, employee_id):
+    """Delete an employee."""
+    if request.method == "POST":
+        employee = get_object_or_404(Employee, id=employee_id, owner=request.user)
+        emp_user = employee.user
+        employee.delete()
+        emp_user.delete()
+
+    return redirect('settings')
+
+
+@login_required
+def employee_form_f(request):
+    """
+    Data entry form for the employee.
+    The employee sees a form with fields = dataset column names.
+    Upon submission, data is added to the dataset file.
+    """
+    if not _is_employee(request.user):
+        return redirect('home')
+
+    employee = request.user.employee_profile
+    dataset = employee.dataset
+
+    columns = []
+    try:
+        file_path = dataset.file.path
+        if dataset.original_filename.endswith('.csv'):
+            df = pd.read_csv(file_path, nrows=0)
+        else:
+            df = pd.read_excel(file_path, nrows=0)
+        columns = list(df.columns)
+    except Exception:
+        pass
+
+    success = False
+    if request.method == "POST":
+        try:
+            file_path = dataset.file.path
+            if dataset.original_filename.endswith('.csv'):
+                df = pd.read_csv(file_path)
+            else:
+                df = pd.read_excel(file_path)
+
+            new_row = {}
+            for col in df.columns:
+                value = request.POST.get(f'col_{col}', '')
+                try:
+                    value = float(value)
+                    if value == int(value):
+                        value = int(value)
+                except (ValueError, TypeError):
+                    pass
+                new_row[col] = value
+
+            new_df = pd.DataFrame([new_row])
+            df = pd.concat([df, new_df], ignore_index=True)
+
+            if dataset.original_filename.endswith('.csv'):
+                df.to_csv(file_path, index=False)
+            else:
+                df.to_excel(file_path, index=False)
+
+            dataset.rows_count = len(df)
+            dataset.save()
+
+            success = True
+        except Exception as e:
+            pass
+
+    return render(request, 'main/employee_form.html', {
+        'employee': employee,
+        'dataset': dataset,
+        'columns': columns,
         'success': success,
     })
 
 
 def about_f(request):
-    """Страница 'О проекте' — доступна всем."""
+    """'About' page - available to everyone."""
     return render(request, 'main/about.html')
 
 
 def logout_f(request):
-    """
-    Выход из аккаунта.
-    auth_logout() — функция Django которая:
-    1. Очищает данные сессии (удаляет "пропуск" пользователя)
-    2. Перенаправляет на приветственную страницу
-    """
+    """Log out of the account."""
     auth_logout(request)
     return redirect('/')
+
+
+@login_required
+def delete_row_f(request, dataset_id, row_idx):
+    """Delete a specific row from the dataset file."""
+    if request.method == "POST":
+        dataset = get_object_or_404(Dataset, id=dataset_id, user=request.user)
+        try:
+            file_path = dataset.file.path
+            if dataset.original_filename.endswith('.csv'):
+                df = pd.read_csv(file_path)
+            else:
+                df = pd.read_excel(file_path)
+            
+            if row_idx in df.index:
+                df = df.drop(index=row_idx)
+                
+                if dataset.original_filename.endswith('.csv'):
+                    df.to_csv(file_path, index=False)
+                else:
+                    df.to_excel(file_path, index=False)
+                
+                dataset.rows_count = len(df)
+                dataset.save()
+        except Exception:
+            pass
+            
+    return redirect('dataset_detail', dataset_id=dataset_id)

@@ -12,7 +12,7 @@ urlpatterns = [
     path('main/', include('main.urls')),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
-# В режиме разработки (DEBUG=True) Django будет раздавать media-файлы
-# (загруженные аватарки, датасеты) через встроенный сервер.
+# In development mode (DEBUG=True) Django will serve media files
+# (uploaded avatars, datasets) via the built-in server.
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

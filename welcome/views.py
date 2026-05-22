@@ -5,20 +5,20 @@ from main.models import UserProfile
 
 
 def welcome_f(request):
-    """Главная приветственная страница — видна всем без авторизации."""
+    """Main welcome page - visible to everyone without authorization."""
     return render(request, 'welcome/welcome.html')
 
 
 def registration_f(request):
     """
-    Регистрация нового пользователя.
+    Registration of a new user.
     
-    Что происходит:
-    1. Пользователь заполняет форму (username, email, password, company)
-    2. Мы проверяем, что такой username ещё не занят
-    3. Создаём User (стандартная модель Django — хранит логин/пароль)
-    4. Создаём UserProfile (наша модель — хранит название компании)
-    5. Автоматически логиним пользователя и отправляем на главную
+    What happens:
+    1. User fills the form (username, email, password, company)
+    2. We check that such a username is not yet taken
+    3. We create a User (standard Django model - stores login/password)
+    4. We create a UserProfile (our model - stores company name)
+    5. Automatically log the user in and redirect to the main page
     """
     errors = {}
 
@@ -29,36 +29,36 @@ def registration_f(request):
         password2 = request.POST.get("password2", "")
         company = request.POST.get("company", "").strip()
 
-        # Валидация — проверяем что все поля заполнены корректно
+        # Validation - checking that all fields are filled correctly
         if not username:
-            errors['username'] = 'Введите имя пользователя'
+            errors['username'] = 'Enter username'
         elif User.objects.filter(username=username).exists():
-            errors['username'] = 'Это имя уже занято'
+            errors['username'] = 'This username is already taken'
 
         if not email:
-            errors['email'] = 'Введите email'
+            errors['email'] = 'Enter email'
 
         if not password1:
-            errors['password1'] = 'Введите пароль'
+            errors['password1'] = 'Enter password'
         elif len(password1) < 6:
-            errors['password1'] = 'Пароль слишком короткий (минимум 6 символов)'
+            errors['password1'] = 'Password is too short (minimum 6 characters)'
 
         if password1 != password2:
-            errors['password2'] = 'Пароли не совпадают'
+            errors['password2'] = 'Passwords do not match'
 
-        # Если ошибок нет — создаём пользователя
+        # If there are no errors - create the user
         if not errors:
             user = User.objects.create_user(
                 username=username,
                 email=email,
-                password=password1  # Django сам хеширует пароль!
+                password=password1  # Django hashes the password itself!
             )
-            # Создаём профиль с названием компании
+            # Create a profile with the company name
             UserProfile.objects.create(
                 user=user,
                 company_name=company
             )
-            # Автоматически входим в аккаунт
+            # Automatically log into the account
             login(request, user)
             return redirect('/main/')
 
@@ -67,8 +67,9 @@ def registration_f(request):
 
 def log_in_f(request):
     """
-    Вход в аккаунт.
-    Принимает username + password, проверяет через Django authenticate.
+    Account login.
+    Takes username + password, checks via Django authenticate.
+    Employees are redirected to the data entry form.
     """
     error = None
 
@@ -80,13 +81,16 @@ def log_in_f(request):
 
         if user is not None:
             login(request, user)
+            # If the user is an employee, redirect to the form
+            if hasattr(user, 'employee_profile'):
+                return redirect('/main/employee/form/')
             return redirect('/main/')
         else:
-            error = "Неверный логин или пароль"
+            error = "Invalid username or password"
 
     return render(request, 'welcome/log_in.html', {'error': error})
 
 
 def support_f(request):
-    """Страница поддержки — доступна без авторизации."""
+    """Support page - available without authorization."""
     return render(request, 'welcome/support.html')

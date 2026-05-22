@@ -1,4 +1,4 @@
-/* ===== ОБЩИЕ СТИЛИ ===== */
+/* ===== GENERAL STYLES ===== */
 * {
   margin: 0;
   padding: 0;
@@ -11,7 +11,7 @@ body {
   color: #1a1a2e;
 }
 
-/* ===== САЙДБАР (боковое меню) ===== */
+/* ===== SIDEBAR ===== */
 aside {
   position: fixed;
   left: 0;
@@ -75,14 +75,14 @@ aside ul li a i {
   font-size: 16px;
 }
 
-/* ===== ОСНОВНОЙ КОНТЕНТ ===== */
+/* ===== MAIN CONTENT ===== */
 main {
   margin-left: 220px;
   padding: 30px 40px;
   min-height: 100vh;
 }
 
-/* ===== ЗАГОЛОВОК СТРАНИЦЫ ===== */
+/* ===== PAGE HEADER ===== */
 .page-header {
   margin-bottom: 30px;
 }
@@ -98,7 +98,7 @@ main {
   font-size: 15px;
 }
 
-/* ===== КАРТОЧКИ ДАШБОРДА ===== */
+/* ===== DASHBOARD CARDS ===== */
 .dashboard-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -148,7 +148,7 @@ main {
   text-decoration: underline;
 }
 
-/* ===== СЕКЦИИ ===== */
+/* ===== SECTIONS ===== */
 .section {
   background: #fff;
   border-radius: 12px;
@@ -167,7 +167,7 @@ main {
   margin-right: 8px;
 }
 
-/* ===== ТАБЛИЦА ДАННЫХ ===== */
+/* ===== DATA TABLE ===== */
 .data-table {
   width: 100%;
   border-collapse: collapse;
@@ -218,7 +218,7 @@ main {
   text-overflow: ellipsis;
 }
 
-/* ===== СТАТУС-БЕЙДЖИ ===== */
+/* ===== STATUS BADGES ===== */
 .status-badge {
   display: inline-block;
   padding: 3px 10px;
@@ -232,7 +232,7 @@ main {
 .status-uploading { background: #cce5ff; color: #004085; }
 .status-error { background: #f8d7da; color: #721c24; }
 
-/* ===== КНОПКИ ===== */
+/* ===== BUTTONS ===== */
 .btn-primary {
   display: inline-flex;
   align-items: center;
@@ -294,7 +294,7 @@ main {
   text-decoration: underline;
 }
 
-/* ===== ФОРМА ЗАГРУЗКИ ===== */
+/* ===== UPLOAD FORM ===== */
 .upload-section {
   background: #fff;
   border-radius: 12px;
@@ -350,7 +350,7 @@ main {
   border-color: #15388c;
 }
 
-/* ===== ПУСТОЕ СОСТОЯНИЕ ===== */
+/* ===== EMPTY STATE ===== */
 .empty-state {
   text-align: center;
   padding: 60px 20px;
@@ -377,7 +377,7 @@ main {
   margin-bottom: 20px;
 }
 
-/* ===== МАППИНГ КОЛОНОК ===== */
+/* ===== COLUMN MAPPING ===== */
 .hint {
   color: #888;
   font-size: 13px;
@@ -428,7 +428,7 @@ main {
 .mapping-status.success { color: #28a745; }
 .mapping-status.error { color: #dc3545; }
 
-/* ===== НАСТРОЙКИ ===== */
+/* ===== SETTINGS ===== */
 .settings-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
@@ -491,7 +491,7 @@ main {
   border: 3px solid #15388c;
 }
 
-/* ===== АЛЕРТЫ ===== */
+/* ===== ALERTS ===== */
 .alert {
   padding: 14px 20px;
   border-radius: 8px;

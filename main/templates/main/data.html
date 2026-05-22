@@ -7,7 +7,7 @@
     <p>Upload and manage your business datasets</p>
 </div>
 
-<!-- Форма загрузки файла -->
+<!-- File upload form -->
 <div class="upload-section">
     <h2><i class="fa-solid fa-cloud-arrow-up"></i> Upload New Dataset</h2>
     <form method="post" action="{% url 'upload_dataset' %}" enctype="multipart/form-data" class="upload-form">
@@ -28,7 +28,7 @@
     </form>
 </div>
 
-<!-- Список загруженных датасетов -->
+<!-- List of uploaded datasets -->
 {% if datasets %}
 <div class="section">
     <h2>Uploaded Datasets</h2>

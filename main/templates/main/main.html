@@ -1,5 +1,5 @@
 {% extends 'main/layout.html' %}
-{% block title %}Интеллектуальный дашборд{% endblock %}
+{% block title %}Intelligent Dashboard{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -117,7 +117,7 @@
         box-shadow: 0 0 0 3px rgba(21, 56, 140, 0.15);
     }
 
-    /* ===== РЕКОМЕНДАЦИИ (Подробный разбор) ===== */
+    /* ===== RECOMMENDATIONS ===== */
     .rec-section {
         background: linear-gradient(135deg, rgba(21, 56, 140, 0.04) 0%, rgba(48, 102, 190, 0.01) 100%);
         border: 1px dashed rgba(21, 56, 140, 0.2);
@@ -162,7 +162,6 @@
         width: 4px;
         height: 100%;
         background: #ecc94b;
-        /* Золотая иконка полезности */
     }
 
     .rec-card:hover {
@@ -209,7 +208,7 @@
         font-weight: 600;
     }
 
-    /* ===== СЕТКА ВИДЖЕТОВ ДАШБОРДА ===== */
+    /* ===== DASHBOARD WIDGETS GRID ===== */
     .dashboard-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
@@ -234,9 +233,7 @@
         transition: all 0.3s;
         min-height: 380px;
         overflow: hidden;
-        /* Fixes Plotly overflow */
         min-width: 0;
-        /* Allows CSS Grid to shrink the container properly */
     }
 
     .widget-box:hover {
@@ -298,7 +295,7 @@
         position: relative;
     }
 
-    /* ===== СТИЛЬНЫЙ КАТАЛОГ КНОПКА ===== */
+    /* ===== STYLISH CATALOG BUTTON ===== */
     .catalog-btn {
         background: linear-gradient(135deg, #15388c 0%, #3066be 100%);
         color: #fff;
@@ -357,8 +354,8 @@
 {% block content %}
 <div class="dashboard-header">
     <div class="dashboard-title">
-        <h1>Интеллектуальный дашборд</h1>
-        <p>Добро пожаловать в центр автоматического бизнес-анализа!</p>
+        <h1>Intelligent Dashboard</h1>
+        <p>Welcome to the center of automatic business analysis!</p>
     </div>
     <div class="header-actions">
         {% if ready_datasets %}
@@ -366,7 +363,7 @@
             <select class="dataset-selector" id="dataset-picker" onchange="switchDataset(this.value)">
                 {% for ds in ready_datasets %}
                 <option value="{{ ds.id }}" {% if ds.id == active_dataset.id %}selected{% endif %}>
-                    📊 {{ ds.name }} ({{ ds.rows_count }} стр.)
+                    📊 {{ ds.name }} ({{ ds.rows_count }} rows)
                 </option>
                 {% endfor %}
             </select>
@@ -380,27 +377,27 @@
             <div class="company-avatar-placeholder"><i class="fa-solid fa-building"></i></div>
             {% endif %}
             <div class="company-info">
-                <span class="company-name">{{ profile.company_name|default:"Моя компания" }}</span>
-                <span class="company-subtext">Настройки профиля</span>
+                <span class="company-name">{{ profile.company_name|default:"My Company" }}</span>
+                <span class="company-subtext">Profile Settings</span>
             </div>
         </a>
     </div>
 </div>
 
 {% if active_dataset %}
-<!-- КАТАЛОГ ВИЗУАЛИЗАЦИЙ -->
+<!-- ANALYTICS CATALOG -->
 <div style="margin-bottom: 30px; display: flex; justify-content: flex-end; gap: 15px;">
     {% if widgets %}
-    <a href="{% url 'clear_dashboard' active_dataset.id %}" class="catalog-btn" style="background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);" onclick="return confirm('Вы уверены, что хотите очистить дашборд?');">
-        <i class="fa-solid fa-trash-can"></i> Очистить дашборд
+    <a href="{% url 'clear_dashboard' active_dataset.id %}" class="catalog-btn" style="background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);" onclick="return confirm('Are you sure you want to clear the dashboard?');">
+        <i class="fa-solid fa-trash-can"></i> Clear Dashboard
     </a>
     {% endif %}
     <a href="{% url 'catalog' active_dataset.id %}" class="catalog-btn">
-        <i class="fa-solid fa-folder-open"></i> Каталог аналитических блоков
+        <i class="fa-solid fa-folder-open"></i> Analytics Catalog
     </a>
 </div>
 
-<!-- СЕТКА ДОБАВЛЕННЫХ ВИДЖЕТОВ -->
+<!-- ADDED WIDGETS GRID -->
 {% if widgets %}
 <div class="dashboard-grid">
     {% for w in widgets %}
@@ -410,33 +407,32 @@
                 <i class="fa-solid {{ w.icon }}"></i>
                 {{ w.name }}
             </span>
-            <a href="{% url 'remove_widget' w.id %}" class="widget-remove-btn" title="Убрать с дашборда">
+            <a href="{% url 'remove_widget' w.id %}" class="widget-remove-btn" title="Remove from dashboard">
                 <i class="fa-solid fa-xmark"></i>
             </a>
         </div>
-        <!-- Блок графика Plotly -->
+        <!-- Plotly chart container -->
         <div class="widget-chart-container" id="chart-{{ w.id }}"></div>
     </div>
     {% endfor %}
 </div>
 {% else %}
-<!-- Дашборд пуст -->
+<!-- Empty dashboard -->
 <div class="empty-dashboard">
     <i class="fa-solid fa-chart-line"></i>
-    <h2>Ваш дашборд пуст</h2>
-    <p>Мы проанализировали ваши данные и готовы рекомендовать самые ценные аналитические срезы. Выберите блоки из
-        рекомендаций ниже или откройте полный каталог.</p>
-    <a href="{% url 'catalog' active_dataset.id %}" class="btn-primary">
-        <i class="fa-solid fa-magnifying-glass-chart"></i> Открыть каталог
+    <h2>Your dashboard is empty</h2>
+    <p>We have analyzed your data and are ready to recommend the most valuable analytical insights. Choose blocks from recommendations below or open the full catalog.</p>
+    <a href="{% url 'catalog' active_dataset.id %}" class="catalog-btn">
+        <i class="fa-solid fa-magnifying-glass-chart"></i> Open Catalog
     </a>
 </div>
 {% endif %}
 
-<!-- ГЛАВНЫЕ РЕКОМЕНДАЦИИ -->
+<!-- TOP RECOMMENDATIONS -->
 {% if recommendations %}
 <div class="rec-section">
     <div class="rec-section-title">
-        💡 Интеллектуальный помощник: Рекомендации для вашего бизнеса
+        💡 Smart Assistant: Recommendations for your business
     </div>
     <div class="rec-grid">
         {% for rec in recommendations %}
@@ -445,14 +441,14 @@
                 <i class="fa-solid {{ rec.icon }}"></i>
                 {{ rec.name }}
             </div>
-            <!-- Подробный описательный текст -->
+            <!-- Detailed descriptive text -->
             <div class="rec-card-body">
                 {{ rec.short_desc }}
             </div>
             <div class="rec-card-footer">
                 <span class="rec-metrics">
                     <i class="fa-solid fa-star" style="color: #ecc94b;"></i>
-                    Полезность: {{ rec.score }}
+                    Usefulness: {{ rec.score }}
                 </span>
                 <form method="post" action="{% url 'add_widget' %}">
                     {% csrf_token %}
@@ -460,7 +456,7 @@
                     <input type="hidden" name="analytics_id" value="{{ rec.id }}">
                     <button type="submit" class="btn-primary"
                         style="padding: 6px 12px; font-size: 12px; border-radius: 8px;">
-                        <i class="fa-solid fa-plus"></i> Добавить
+                        <i class="fa-solid fa-plus"></i> Add
                     </button>
                 </form>
             </div>
@@ -471,14 +467,13 @@
 {% endif %}
 
 {% else %}
-<!-- Нет готовых датасетов вообще -->
+<!-- No datasets ready -->
 <div class="empty-dashboard" style="background: #fff;">
     <i class="fa-solid fa-database" style="font-size: 60px; color: #cbd5e0; margin-bottom: 20px;"></i>
-    <h2>Нет готовых данных для анализа</h2>
-    <p>Для начала построения автоматических дашбордов загрузите ваш первый датасет в формате Excel/CSV и настройте
-        маппинг колонок.</p>
+    <h2>No data ready for analysis</h2>
+    <p>To start building automatic dashboards, upload your first dataset in Excel/CSV format and configure the column mapping.</p>
     <a href="{% url 'data' %}" class="catalog-btn">
-        <i class="fa-solid fa-cloud-arrow-up"></i> Загрузить данные
+        <i class="fa-solid fa-cloud-arrow-up"></i> Upload Data
     </a>
 </div>
 {% endif %}
@@ -486,7 +481,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- Загружаем библиотеку Plotly.js -->
+<!-- Load Plotly.js -->
 <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
 <script>
     function switchDataset(datasetId) {
@@ -500,7 +495,7 @@
             const chartData = {{ w.chart_json|safe }};
             Plotly.newPlot('chart-{{ w.id }}', chartData.data, chartData.layout, { responsive: true, displayModeBar: false });
         } catch (e) {
-            console.error("Ошибка отрисовки графика {{ w.id }}:", e);
+            console.error("Error rendering chart {{ w.id }}:", e);
         }
     {% endfor %}
     {% endif %}

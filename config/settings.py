@@ -130,8 +130,8 @@ STATICFILES_DIRS = [
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Media files (user uploads: avatars, datasets)
-# MEDIA_URL — URL-адрес для доступа к загруженным файлам
-# MEDIA_ROOT — физическая папка на диске, куда файлы сохраняются
+# MEDIA_URL — URL address for accessing uploaded files
+# MEDIA_ROOT — physical folder on the disk where files are saved
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 

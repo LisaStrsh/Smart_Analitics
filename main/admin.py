@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import UserProfile, Dataset, ColumnMapping
+from .models import UserProfile, Dataset, ColumnMapping, DashboardWidget, Employee
 
 
 @admin.register(UserProfile)
@@ -19,3 +19,10 @@ class DatasetAdmin(admin.ModelAdmin):
 class ColumnMappingAdmin(admin.ModelAdmin):
     list_display = ('dataset', 'user_column_name', 'standard_name')
     list_filter = ('standard_name',)
+
+
+@admin.register(Employee)
+class EmployeeAdmin(admin.ModelAdmin):
+    list_display = ('display_name', 'owner', 'dataset', 'user', 'created_at')
+    list_filter = ('owner', 'dataset')
+    search_fields = ('display_name', 'user__username')
